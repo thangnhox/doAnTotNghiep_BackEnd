@@ -1,13 +1,14 @@
+import "reflect-metadata";
 import { Column, Entity, JoinTable, ManyToMany } from "typeorm";
 import { Books } from "./Books";
 
 @Entity("Category", { schema: "test_doantotnghiep" })
 export class Category {
   @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id: string;
+  id!: string;
 
   @Column("varchar", { name: "Name", length: 255 })
-  name: string;
+  name!: string;
 
   @ManyToMany(() => Books, (books) => books.categories)
   @JoinTable({
@@ -16,5 +17,5 @@ export class Category {
     inverseJoinColumns: [{ name: "BooksID", referencedColumnName: "id" }],
     schema: "test_doantotnghiep",
   })
-  books: Books[];
+  books!: Books[];
 }

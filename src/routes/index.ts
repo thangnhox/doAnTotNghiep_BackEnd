@@ -1,11 +1,8 @@
 import { Router } from 'express';
-import dataController from '../controllers/dataController';
+import IndexController from '../controllers/IndexController';
 
-const router = Router();
+const index = Router();
 
-router.get('/data', dataController.getData);
-router.post('/data', dataController.postData);
-router.put('/data/:id', dataController.putData);
-router.delete('/data/:id', dataController.deleteData);
+index.get('/', IndexController.index);
 
-export default router;
+export default index;

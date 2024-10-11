@@ -9,10 +9,10 @@ CREATE TABLE Category (
 CREATE TABLE Books (
     ID VARCHAR(255) PRIMARY KEY,
     Title VARCHAR(255) NOT NULL,
-    Price DECIMAL(10, 2) NOT NULL,
+    Price FLOAT NOT NULL,
     file_url VARCHAR(255) NOT NULL,
-    cover_url VARCHAR(255) NOT NULL,
-    status VARCHAR(255) NOT NULL,
+    cover_url VARCHAR(255),
+    status BIT(8) NOT NULL,
     INDEX (Title)
 );
 
@@ -34,7 +34,7 @@ CREATE TABLE Discount (
     ID VARCHAR(255) PRIMARY KEY,
     Name VARCHAR(255) NOT NULL,
     Expire_date DATE NOT NULL,
-    Status VARCHAR(255) NOT NULL
+    Status BIT(8) NOT NULL
 );
 
 CREATE TABLE Book_Discount (

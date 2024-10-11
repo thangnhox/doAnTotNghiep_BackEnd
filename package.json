@@ -13,6 +13,7 @@
     "body-parser": "^1.20.3",
     "express": "^4.21.1",
     "mariadb": "^3.3.2",
+    "mysql": "^2.18.1",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.20"
   },

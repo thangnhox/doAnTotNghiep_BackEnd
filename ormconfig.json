@@ -6,8 +6,8 @@
     "port": 17131,
     "username": "app",
     "password": "app",
-    "database": "",
+    "database": "test_DoAnTotNghiep",
     "synchronize": false,
-    "entities": ["entities/*.js"]
+    "entities": ["src/models/entities/*.ts"]
   }
 ]

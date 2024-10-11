@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import {
   Column,
   Entity,
@@ -15,28 +16,28 @@ import { Notes } from "./Notes";
 @Entity("User", { schema: "test_doantotnghiep" })
 export class User {
   @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id: string;
+  id!: string;
 
   @Column("varchar", { name: "email", unique: true, length: 255 })
-  email: string;
+  email!: string;
 
   @Column("varchar", { name: "password", length: 255 })
-  password: string;
+  password!: string;
 
   @Column("varchar", { name: "Name", length: 255 })
-  name: string;
+  name!: string;
 
   @Column("int", { name: "BirthYear" })
-  birthYear: number;
+  birthYear!: number;
 
   @Column("varchar", { name: "Avatar", length: 255 })
-  avatar: string;
+  avatar!: string;
 
   @OneToMany(() => UserMembership, (userMembership) => userMembership.user)
-  userMemberships: UserMembership[];
+  userMemberships!: UserMembership[];
 
   @OneToMany(() => Orders, (orders) => orders.user)
-  orders: Orders[];
+  orders!: Orders[];
 
   @ManyToMany(() => Books, (books) => books.users)
   @JoinTable({
@@ -45,8 +46,8 @@ export class User {
     inverseJoinColumns: [{ name: "BooksID", referencedColumnName: "id" }],
     schema: "test_doantotnghiep",
   })
-  books: Books[];
+  books!: Books[];
 
   @OneToMany(() => Notes, (notes) => notes.user)
-  notes: Notes[];
+  notes!: Notes[];
 }

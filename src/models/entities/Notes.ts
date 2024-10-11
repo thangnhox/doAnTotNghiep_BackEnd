@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { Column, Entity, Index, JoinColumn, ManyToOne } from "typeorm";
 import { User } from "./User";
 import { Books } from "./Books";
@@ -7,28 +8,28 @@ import { Books } from "./Books";
 @Entity("Notes", { schema: "test_doantotnghiep" })
 export class Notes {
   @Column("varchar", { primary: true, name: "UserID", length: 255 })
-  userId: string;
+  userId!: string;
 
   @Column("varchar", { primary: true, name: "BooksID", length: 255 })
-  booksId: string;
+  booksId!: string;
 
   @Column("int", { primary: true, name: "Page" })
-  page: number;
+  page!: number;
 
   @Column("text", { name: "Detail", nullable: true })
-  detail: string | null;
+  detail!: string | null;
 
   @ManyToOne(() => User, (user) => user.notes, {
     onDelete: "RESTRICT",
     onUpdate: "RESTRICT",
   })
   @JoinColumn([{ name: "UserID", referencedColumnName: "id" }])
-  user: User;
+  user!: User;
 
   @ManyToOne(() => Books, (books) => books.notes, {
     onDelete: "RESTRICT",
     onUpdate: "RESTRICT",
   })
   @JoinColumn([{ name: "BooksID", referencedColumnName: "id" }])
-  books: Books;
+  books!: Books;
 }

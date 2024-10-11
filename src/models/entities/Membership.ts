@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { Column, Entity, JoinTable, ManyToMany, OneToMany } from "typeorm";
 import { Discount } from "./Discount";
 import { Books } from "./Books";
@@ -6,16 +7,16 @@ import { UserMembership } from "./UserMembership";
 @Entity("Membership", { schema: "test_doantotnghiep" })
 export class Membership {
   @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id: string;
+  id!: string;
 
   @Column("varchar", { name: "Name", length: 255 })
-  name: string;
+  name!: string;
 
   @Column("int", { name: "Rank" })
-  rank: number;
+  rank!: number;
 
   @Column("tinyint", { name: "AllowNew", width: 1, default: () => "'1'" })
-  allowNew: boolean;
+  allowNew!: boolean;
 
   @ManyToMany(() => Discount, (discount) => discount.memberships)
   @JoinTable({
@@ -24,7 +25,7 @@ export class Membership {
     inverseJoinColumns: [{ name: "DiscountID", referencedColumnName: "id" }],
     schema: "test_doantotnghiep",
   })
-  discounts: Discount[];
+  discounts!: Discount[];
 
   @ManyToMany(() => Books, (books) => books.memberships)
   @JoinTable({
@@ -33,11 +34,11 @@ export class Membership {
     inverseJoinColumns: [{ name: "BooksID", referencedColumnName: "id" }],
     schema: "test_doantotnghiep",
   })
-  books: Books[];
+  books!: Books[];
 
   @OneToMany(
     () => UserMembership,
     (userMembership) => userMembership.membership
   )
-  userMemberships: UserMembership[];
+  userMemberships!: UserMembership[];
 }

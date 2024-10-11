@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import {
   Column,
   Entity,
@@ -18,25 +19,25 @@ import { Category } from "./Category";
 @Entity("Books", { schema: "test_doantotnghiep" })
 export class Books {
   @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id: string;
+  id!: string;
 
   @Column("varchar", { name: "Title", length: 255 })
-  title: string;
+  title!: string;
 
-  @Column("decimal", { name: "Price", precision: 10, scale: 2 })
-  price: string;
+  @Column("float", { name: "Price", precision: 12 })
+  price!: number;
 
   @Column("varchar", { name: "file_url", length: 255 })
-  fileUrl: string;
+  fileUrl!: string;
 
-  @Column("varchar", { name: "cover_url", length: 255 })
-  coverUrl: string;
+  @Column("varchar", { name: "cover_url", nullable: true, length: 255 })
+  coverUrl!: string | null;
 
-  @Column("varchar", { name: "status", length: 255 })
-  status: string;
+  @Column("bit", { name: "status" })
+  status!: number;
 
   @OneToMany(() => Publishing, (publishing) => publishing.books)
-  publishings: Publishing[];
+  publishings!: Publishing[];
 
   @ManyToMany(() => Discount, (discount) => discount.books)
   @JoinTable({
@@ -45,20 +46,20 @@ export class Books {
     inverseJoinColumns: [{ name: "DiscountID", referencedColumnName: "id" }],
     schema: "test_doantotnghiep",
   })
-  discounts: Discount[];
+  discounts!: Discount[];
 
   @ManyToMany(() => Membership, (membership) => membership.books)
-  memberships: Membership[];
+  memberships!: Membership[];
 
   @OneToMany(() => Orders, (orders) => orders.books)
-  orders: Orders[];
+  orders!: Orders[];
 
   @ManyToMany(() => User, (user) => user.books)
-  users: User[];
+  users!: User[];
 
   @OneToMany(() => Notes, (notes) => notes.books)
-  notes: Notes[];
+  notes!: Notes[];
 
   @ManyToMany(() => Category, (category) => category.books)
-  categories: Category[];
+  categories!: Category[];
 }
