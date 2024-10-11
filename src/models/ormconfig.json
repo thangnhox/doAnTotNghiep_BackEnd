@@ -1,0 +1,13 @@
+[
+  {
+    "name": "default",
+    "type": "mariadb",
+    "host": "minutes-played.gl.at.ply.gg",
+    "port": 17131,
+    "username": "app",
+    "password": "app",
+    "database": "",
+    "synchronize": false,
+    "entities": ["entities/*.js"]
+  }
+]
