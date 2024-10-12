@@ -29,7 +29,7 @@ class UserController {
             const token = makeToken(userData.id, userData.email);
             res.status(200).json({message: "authentication confirmed", token: token});
         } catch (error: any) {
-            res.status(500).send("Authentication server error");
+            res.status(500).json({message: "Authentication server error"});
         }
     }
 
@@ -62,6 +62,7 @@ class UserController {
 
             if (existingUser != null) {
                 res.status(409).json({message: "user already exists"});
+                return;
             }
 
             newUser.email = req.body.email;
@@ -73,7 +74,7 @@ class UserController {
             const savedUser = await userRepository.save(toDatabase);
             res.status(201).json({message: "create user success", token: makeToken(savedUser.id, savedUser.email)});
         } catch (error: any) {
-            res.status(500).send("Authentication server error");
+            res.status(500).json({message: "Authentication server error"});
         }
 
     }
