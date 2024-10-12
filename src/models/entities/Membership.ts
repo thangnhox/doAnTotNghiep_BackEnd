@@ -27,6 +27,9 @@ export class Membership {
   @Column("bit", { name: "AllowNew" })
   allowNew!: number;
 
+  @Column("decimal", { name: "Price", precision: 10, scale: 2 })
+  price!: string;
+
   @ManyToMany(() => Books, (books) => books.memberships)
   @JoinTable({
     name: "BookMembership",

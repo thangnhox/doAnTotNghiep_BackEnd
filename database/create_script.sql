@@ -12,7 +12,8 @@ CREATE TABLE test_DoAnTotNghiep.Membership (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(255) UNIQUE NOT NULL,
     Rank INT NOT NULL,
-    AllowNew BIT(8) NOT NULL
+    AllowNew BIT(8) NOT NULL,
+    Price DECIMAL(10, 2) NOT NULL
 );
 
 CREATE TABLE test_DoAnTotNghiep.User (
