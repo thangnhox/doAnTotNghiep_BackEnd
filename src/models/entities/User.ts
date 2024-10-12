@@ -16,14 +16,15 @@ import { Notes } from "./Notes";
 import { Books } from "./Books";
 import { BookRequest } from "./BookRequest";
 
+@Index("Email", ["email"], { unique: true })
 @Index("Name", ["name"], { unique: true })
-@Index("Email", ["email"], {})
+@Index("Email_2", ["email"], {})
 @Entity("User", { schema: "test_doantotnghiep" })
 export class User {
   @PrimaryGeneratedColumn({ type: "int", name: "ID" })
   id!: number;
 
-  @Column("varchar", { name: "Email", length: 255 })
+  @Column("varchar", { name: "Email", unique: true, length: 255 })
   email!: string;
 
   @Column("varchar", { name: "password", length: 255 })

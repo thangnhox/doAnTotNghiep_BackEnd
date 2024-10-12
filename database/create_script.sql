@@ -17,7 +17,7 @@ CREATE TABLE test_DoAnTotNghiep.Membership (
 
 CREATE TABLE test_DoAnTotNghiep.User (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    Email VARCHAR(255) NOT NULL,
+    Email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     Name VARCHAR(255) UNIQUE NOT NULL,
     BirthYear INT NOT NULL,
@@ -39,7 +39,8 @@ CREATE TABLE test_DoAnTotNghiep.Books (
     file_url VARCHAR(255) NOT NULL,
     cover_url VARCHAR(255),
     status BIT(8) NOT NULL,
-    PublisherID INT,
+    PublisherID INT NOT NULL,
+    IsRecommended INT DEFAULT 0,
     INDEX (Title),
     FOREIGN KEY (PublisherID) REFERENCES test_DoAnTotNghiep.Publisher(ID)
 );

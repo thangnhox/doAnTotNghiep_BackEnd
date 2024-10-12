@@ -38,8 +38,15 @@ export class Books {
   @Column("bit", { name: "status" })
   status!: number;
 
-  @Column("int", { name: "PublisherID", nullable: true })
-  publisherId!: number | null;
+  @Column("int", { name: "PublisherID" })
+  publisherId!: number;
+
+  @Column("int", {
+    name: "IsRecommended",
+    nullable: true,
+    default: () => "'0'",
+  })
+  isRecommended!: number | null;
 
   @ManyToOne(() => Publisher, (publisher) => publisher.books, {
     onDelete: "RESTRICT",
