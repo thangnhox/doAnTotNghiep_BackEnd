@@ -1,12 +1,20 @@
 import "reflect-metadata";
-import { Column, Entity, ManyToMany } from "typeorm";
-import { Books } from "./Books";
-import { Membership } from "./Membership";
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+import { Orders } from "./Orders";
+import { User } from "./User";
+import { Subcribe } from "./Subcribe";
 
 @Entity("Discount", { schema: "test_doantotnghiep" })
 export class Discount {
-  @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id!: string;
+  @PrimaryGeneratedColumn({ type: "int", name: "ID" })
+  id!: number;
 
   @Column("varchar", { name: "Name", length: 255 })
   name!: string;
@@ -17,9 +25,18 @@ export class Discount {
   @Column("bit", { name: "Status" })
   status!: number;
 
-  @ManyToMany(() => Books, (books) => books.discounts)
-  books!: Books[];
+  @OneToMany(() => Orders, (orders) => orders.discount)
+  orders!: Orders[];
 
-  @ManyToMany(() => Membership, (membership) => membership.discounts)
-  memberships!: Membership[];
+  @ManyToMany(() => User, (user) => user.discounts)
+  @JoinTable({
+    name: "Used",
+    joinColumns: [{ name: "DiscountID", referencedColumnName: "id" }],
+    inverseJoinColumns: [{ name: "UserID", referencedColumnName: "id" }],
+    schema: "test_doantotnghiep",
+  })
+  users!: User[];
+
+  @OneToMany(() => Subcribe, (subcribe) => subcribe.discount)
+  subcribes!: Subcribe[];
 }

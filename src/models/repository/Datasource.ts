@@ -6,21 +6,22 @@ import { Membership } from "../entities/Membership";
 import { Notes } from "../entities/Notes";
 import { Orders } from "../entities/Orders";
 import { Publisher } from "../entities/Publisher";
-import { Publishing } from "../entities/Publishing";
 import { User } from "../entities/User";
-import { UserMembership } from "../entities/UserMembership";
+import { BookRequest } from "../entities/BookRequest";
+import { MembershipRecord } from "../entities/MembershipRecord";
+import { Subcribe } from "../entities/Subcribe";
 
 export function createAppDataSource(): DataSource {
     return new DataSource({
-        type: "mariadb",
-        host: "minutes-played.gl.at.ply.gg",
-        port: 17131,
-        username: "app",
-        password: "app",
-        database: "test_DoAnTotNghiep",
+        type: process.env.DB_TYPE as any,
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT || '3306', 10),
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
         synchronize: false,
         logging: true,
-        entities: [Books, Category, Discount, Membership, Notes, Orders, Publisher, Publishing, User, UserMembership],
+        entities: [BookRequest, Books, Category, Discount, Membership, MembershipRecord, Notes, Orders, Publisher, Subcribe, User],
         migrations: [],
         subscribers: [],
     });

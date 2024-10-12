@@ -1,15 +1,15 @@
 import "reflect-metadata";
-import { Column, Entity, OneToMany } from "typeorm";
-import { Publishing } from "./Publishing";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Books } from "./Books";
 
 @Entity("Publisher", { schema: "test_doantotnghiep" })
 export class Publisher {
-  @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id!: string;
+  @PrimaryGeneratedColumn({ type: "int", name: "ID" })
+  id!: number;
 
   @Column("varchar", { name: "Name", length: 255 })
   name!: string;
 
-  @OneToMany(() => Publishing, (publishing) => publishing.publisher)
-  publishings!: Publishing[];
+  @OneToMany(() => Books, (books) => books.publisher)
+  books!: Books[];
 }

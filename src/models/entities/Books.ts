@@ -3,29 +3,31 @@ import {
   Column,
   Entity,
   Index,
-  JoinTable,
+  JoinColumn,
   ManyToMany,
+  ManyToOne,
   OneToMany,
+  PrimaryGeneratedColumn,
 } from "typeorm";
-import { Publishing } from "./Publishing";
-import { Discount } from "./Discount";
+import { Publisher } from "./Publisher";
 import { Membership } from "./Membership";
 import { Orders } from "./Orders";
-import { User } from "./User";
 import { Notes } from "./Notes";
 import { Category } from "./Category";
+import { User } from "./User";
 
 @Index("Title", ["title"], {})
+@Index("PublisherID", ["publisherId"], {})
 @Entity("Books", { schema: "test_doantotnghiep" })
 export class Books {
-  @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id!: string;
+  @PrimaryGeneratedColumn({ type: "int", name: "ID" })
+  id!: number;
 
   @Column("varchar", { name: "Title", length: 255 })
   title!: string;
 
-  @Column("float", { name: "Price", precision: 12 })
-  price!: number;
+  @Column("decimal", { name: "Price", precision: 10, scale: 2 })
+  price!: string;
 
   @Column("varchar", { name: "file_url", length: 255 })
   fileUrl!: string;
@@ -36,17 +38,15 @@ export class Books {
   @Column("bit", { name: "status" })
   status!: number;
 
-  @OneToMany(() => Publishing, (publishing) => publishing.books)
-  publishings!: Publishing[];
+  @Column("int", { name: "PublisherID", nullable: true })
+  publisherId!: number | null;
 
-  @ManyToMany(() => Discount, (discount) => discount.books)
-  @JoinTable({
-    name: "Book_Discount",
-    joinColumns: [{ name: "BooksID", referencedColumnName: "id" }],
-    inverseJoinColumns: [{ name: "DiscountID", referencedColumnName: "id" }],
-    schema: "test_doantotnghiep",
+  @ManyToOne(() => Publisher, (publisher) => publisher.books, {
+    onDelete: "RESTRICT",
+    onUpdate: "RESTRICT",
   })
-  discounts!: Discount[];
+  @JoinColumn([{ name: "PublisherID", referencedColumnName: "id" }])
+  publisher!: Publisher;
 
   @ManyToMany(() => Membership, (membership) => membership.books)
   memberships!: Membership[];
@@ -54,12 +54,12 @@ export class Books {
   @OneToMany(() => Orders, (orders) => orders.books)
   orders!: Orders[];
 
-  @ManyToMany(() => User, (user) => user.books)
-  users!: User[];
-
   @OneToMany(() => Notes, (notes) => notes.books)
   notes!: Notes[];
 
   @ManyToMany(() => Category, (category) => category.books)
   categories!: Category[];
+
+  @ManyToMany(() => User, (user) => user.books)
+  users!: User[];
 }

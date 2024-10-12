@@ -6,38 +6,55 @@ import {
   JoinTable,
   ManyToMany,
   OneToMany,
+  PrimaryGeneratedColumn,
 } from "typeorm";
-import { UserMembership } from "./UserMembership";
 import { Orders } from "./Orders";
-import { Books } from "./Books";
+import { Discount } from "./Discount";
+import { Subcribe } from "./Subcribe";
+import { MembershipRecord } from "./MembershipRecord";
 import { Notes } from "./Notes";
+import { Books } from "./Books";
+import { BookRequest } from "./BookRequest";
 
-@Index("email", ["email"], { unique: true })
+@Index("Name", ["name"], { unique: true })
+@Index("Email", ["email"], {})
 @Entity("User", { schema: "test_doantotnghiep" })
 export class User {
-  @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id!: string;
+  @PrimaryGeneratedColumn({ type: "int", name: "ID" })
+  id!: number;
 
-  @Column("varchar", { name: "email", unique: true, length: 255 })
+  @Column("varchar", { name: "Email", length: 255 })
   email!: string;
 
   @Column("varchar", { name: "password", length: 255 })
   password!: string;
 
-  @Column("varchar", { name: "Name", length: 255 })
+  @Column("varchar", { name: "Name", unique: true, length: 255 })
   name!: string;
 
   @Column("int", { name: "BirthYear" })
   birthYear!: number;
 
-  @Column("varchar", { name: "Avatar", length: 255 })
-  avatar!: string;
-
-  @OneToMany(() => UserMembership, (userMembership) => userMembership.user)
-  userMemberships!: UserMembership[];
+  @Column("varchar", { name: "Avatar", nullable: true, length: 255 })
+  avatar!: string | null;
 
   @OneToMany(() => Orders, (orders) => orders.user)
   orders!: Orders[];
+
+  @ManyToMany(() => Discount, (discount) => discount.users)
+  discounts!: Discount[];
+
+  @OneToMany(() => Subcribe, (subcribe) => subcribe.user)
+  subcribes!: Subcribe[];
+
+  @OneToMany(
+    () => MembershipRecord,
+    (membershipRecord) => membershipRecord.user
+  )
+  membershipRecords!: MembershipRecord[];
+
+  @OneToMany(() => Notes, (notes) => notes.user)
+  notes!: Notes[];
 
   @ManyToMany(() => Books, (books) => books.users)
   @JoinTable({
@@ -48,6 +65,6 @@ export class User {
   })
   books!: Books[];
 
-  @OneToMany(() => Notes, (notes) => notes.user)
-  notes!: Notes[];
+  @OneToMany(() => BookRequest, (bookRequest) => bookRequest.user)
+  bookRequests!: BookRequest[];
 }

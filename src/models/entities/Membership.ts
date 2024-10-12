@@ -1,44 +1,47 @@
 import "reflect-metadata";
-import { Column, Entity, JoinTable, ManyToMany, OneToMany } from "typeorm";
-import { Discount } from "./Discount";
+import {
+  Column,
+  Entity,
+  Index,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Books } from "./Books";
-import { UserMembership } from "./UserMembership";
+import { Subcribe } from "./Subcribe";
+import { MembershipRecord } from "./MembershipRecord";
 
+@Index("Name", ["name"], { unique: true })
 @Entity("Membership", { schema: "test_doantotnghiep" })
 export class Membership {
-  @Column("varchar", { primary: true, name: "ID", length: 255 })
-  id!: string;
+  @PrimaryGeneratedColumn({ type: "int", name: "ID" })
+  id!: number;
 
-  @Column("varchar", { name: "Name", length: 255 })
+  @Column("varchar", { name: "Name", unique: true, length: 255 })
   name!: string;
 
   @Column("int", { name: "Rank" })
   rank!: number;
 
-  @Column("tinyint", { name: "AllowNew", width: 1, default: () => "'1'" })
-  allowNew!: boolean;
-
-  @ManyToMany(() => Discount, (discount) => discount.memberships)
-  @JoinTable({
-    name: "Membership_Discount",
-    joinColumns: [{ name: "MembershipID", referencedColumnName: "id" }],
-    inverseJoinColumns: [{ name: "DiscountID", referencedColumnName: "id" }],
-    schema: "test_doantotnghiep",
-  })
-  discounts!: Discount[];
+  @Column("bit", { name: "AllowNew" })
+  allowNew!: number;
 
   @ManyToMany(() => Books, (books) => books.memberships)
   @JoinTable({
-    name: "Book_Membership",
+    name: "BookMembership",
     joinColumns: [{ name: "MembershipID", referencedColumnName: "id" }],
     inverseJoinColumns: [{ name: "BooksID", referencedColumnName: "id" }],
     schema: "test_doantotnghiep",
   })
   books!: Books[];
 
+  @OneToMany(() => Subcribe, (subcribe) => subcribe.membership)
+  subcribes!: Subcribe[];
+
   @OneToMany(
-    () => UserMembership,
-    (userMembership) => userMembership.membership
+    () => MembershipRecord,
+    (membershipRecord) => membershipRecord.membership
   )
-  userMemberships!: UserMembership[];
+  membershipRecords!: MembershipRecord[];
 }
