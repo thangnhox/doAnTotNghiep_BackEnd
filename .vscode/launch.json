@@ -24,6 +24,18 @@
             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Run Directly ts-node",
+            "runtimeExecutable": "npx",
+            "runtimeArgs": [
+                "ts-node",
+                "src/index.ts"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
         }
     ]
 }
