@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ const port = 3000;
 
 // Middleware
 app.use(bodyParser.json());
+app.use(cors()); // TODO: specify origin later (current: accept all origin)
 
 // Routes
 app.use('/categories', category);
