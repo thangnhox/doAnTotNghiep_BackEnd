@@ -41,6 +41,7 @@ CREATE TABLE test_DoAnTotNghiep.Books (
     cover_url VARCHAR(255),
     status BIT(8) NOT NULL,
     PublisherID INT NOT NULL,
+    PublishDate DATE NOT NULL,
     IsRecommended INT DEFAULT 0,
     INDEX (Title),
     FOREIGN KEY (PublisherID) REFERENCES test_DoAnTotNghiep.Publisher(ID)

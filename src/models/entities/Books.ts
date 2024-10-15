@@ -41,6 +41,9 @@ export class Books {
   @Column("int", { name: "PublisherID" })
   publisherId!: number;
 
+  @Column("date", { name: "PublishDate" })
+  publishDate!: string;
+
   @Column("int", {
     name: "IsRecommended",
     nullable: true,
