@@ -9,7 +9,7 @@ import { Publisher } from "../entities/Publisher";
 import { User } from "../entities/User";
 import { BookRequest } from "../entities/BookRequest";
 import { MembershipRecord } from "../entities/MembershipRecord";
-import { Subcribe } from "../entities/Subcribe";
+import { Subscribe } from "../entities/Subscribe";
 
 export function createAppDataSource(): DataSource {
     return new DataSource({
@@ -21,7 +21,7 @@ export function createAppDataSource(): DataSource {
         database: process.env.DB_NAME,
         synchronize: false,
         logging: true,
-        entities: [BookRequest, Books, Category, Discount, Membership, MembershipRecord, Notes, Orders, Publisher, Subcribe, User],
+        entities: [BookRequest, Books, Category, Discount, Membership, MembershipRecord, Notes, Orders, Publisher, Subscribe, User],
         migrations: [],
         subscribers: [],
     });

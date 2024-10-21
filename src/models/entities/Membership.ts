@@ -9,7 +9,7 @@ import {
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { Books } from "./Books";
-import { Subcribe } from "./Subcribe";
+import { Subscribe } from "./Subscribe";
 import { MembershipRecord } from "./MembershipRecord";
 
 @Index("Name", ["name"], { unique: true })
@@ -39,8 +39,8 @@ export class Membership {
   })
   books!: Books[];
 
-  @OneToMany(() => Subcribe, (subcribe) => subcribe.membership)
-  subcribes!: Subcribe[];
+  @OneToMany(() => Subscribe, (subscribe) => subscribe.membership)
+  subcribes!: Subscribe[];
 
   @OneToMany(
     () => MembershipRecord,

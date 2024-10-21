@@ -9,7 +9,7 @@ import {
 } from "typeorm";
 import { Orders } from "./Orders";
 import { User } from "./User";
-import { Subcribe } from "./Subcribe";
+import { Subscribe } from "./Subscribe";
 
 @Entity("Discount", { schema: "test_doantotnghiep" })
 export class Discount {
@@ -37,6 +37,6 @@ export class Discount {
   })
   users!: User[];
 
-  @OneToMany(() => Subcribe, (subcribe) => subcribe.discount)
-  subcribes!: Subcribe[];
+  @OneToMany(() => Subscribe, (subscribe) => subscribe.discount)
+  subcribes!: Subscribe[];
 }

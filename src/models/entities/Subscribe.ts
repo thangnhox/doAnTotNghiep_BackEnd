@@ -14,8 +14,8 @@ import { Discount } from "./Discount";
 @Index("UserID", ["userId"], {})
 @Index("MembershipID", ["membershipId"], {})
 @Index("DiscountID", ["discountId"], {})
-@Entity("Subcribe", { schema: "test_doantotnghiep" })
-export class Subcribe {
+@Entity("Subscribe", { schema: "test_doantotnghiep" })
+export class Subscribe {
   @PrimaryGeneratedColumn({ type: "int", name: "ID" })
   id!: number;
 

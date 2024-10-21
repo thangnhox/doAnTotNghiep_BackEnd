@@ -10,7 +10,7 @@ import {
 } from "typeorm";
 import { Orders } from "./Orders";
 import { Discount } from "./Discount";
-import { Subcribe } from "./Subcribe";
+import { Subscribe } from "./Subscribe";
 import { MembershipRecord } from "./MembershipRecord";
 import { Notes } from "./Notes";
 import { Books } from "./Books";
@@ -45,8 +45,8 @@ export class User {
   @ManyToMany(() => Discount, (discount) => discount.users)
   discounts!: Discount[];
 
-  @OneToMany(() => Subcribe, (subcribe) => subcribe.user)
-  subcribes!: Subcribe[];
+  @OneToMany(() => Subscribe, (subscribe) => subscribe.user)
+  subcribes!: Subscribe[];
 
   @OneToMany(
     () => MembershipRecord,
