@@ -17,8 +17,6 @@ import { Books } from "./Books";
 import { BookRequest } from "./BookRequest";
 
 @Index("Email", ["email"], { unique: true })
-@Index("Name", ["name"], { unique: true })
-@Index("Email_2", ["email"], {})
 @Entity("User", { schema: "test_doantotnghiep" })
 export class User {
   @PrimaryGeneratedColumn({ type: "int", name: "ID" })
@@ -30,7 +28,7 @@ export class User {
   @Column("varchar", { name: "password", length: 255 })
   password!: string;
 
-  @Column("varchar", { name: "Name", unique: true, length: 255 })
+  @Column("varchar", { name: "Name", length: 255 })
   name!: string;
 
   @Column("int", { name: "BirthYear" })

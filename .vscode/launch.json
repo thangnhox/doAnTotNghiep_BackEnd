@@ -36,6 +36,19 @@
             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Run live debug nodemon",
+            "runtimeExecutable": "nodemon",
+            "runtimeArgs": [
+                "--exec",
+                "ts-node",
+                "src/index.ts"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
         }
     ]
 }

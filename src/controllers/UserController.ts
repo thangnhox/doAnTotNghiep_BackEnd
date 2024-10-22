@@ -58,7 +58,7 @@ class UserController {
             const userRepository = AppDataSource.getRepository(User);
 
             const email = req.body.email;
-            const existingUser = userRepository.findOne({ where: { email } });
+            const existingUser = await userRepository.findOne({ where: { email } });
 
             if (existingUser != null) {
                 res.status(409).json({message: "user already exists"});

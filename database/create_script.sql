@@ -20,7 +20,7 @@ CREATE TABLE test_DoAnTotNghiep.User (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     Email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    Name VARCHAR(255) UNIQUE NOT NULL,
+    Name VARCHAR(255) NOT NULL,
     BirthYear INT NOT NULL,
     Avatar VARCHAR(255),
     INDEX (email)
@@ -74,7 +74,7 @@ CREATE TABLE test_DoAnTotNghiep.Used (
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID)
 );
 
-CREATE TABLE test_DoAnTotNghiep.Subcribe (
+CREATE TABLE test_DoAnTotNghiep.Subscribe (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT NOT NULL,
     MembershipID INT NOT NULL,
@@ -132,7 +132,7 @@ CREATE TABLE test_DoAnTotNghiep.BookRequest (
 DELIMITER $$
 
 CREATE TRIGGER after_subscribe_insert
-AFTER INSERT ON test_DoAnTotNghiep.Subcribe
+AFTER INSERT ON test_DoAnTotNghiep.Subscribe
 FOR EACH ROW
 BEGIN
     DECLARE expire_date DATE;
