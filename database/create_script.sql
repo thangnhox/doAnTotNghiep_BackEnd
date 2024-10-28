@@ -158,3 +158,8 @@ STARTS CURRENT_DATE + INTERVAL 1 DAY
 DO
 DELETE FROM test_DoAnTotNghiep.MembershipRecord
 WHERE Expire_date = CURDATE() - INTERVAL 1 DAY;
+
+
+INSERT INTO test_DoAnTotNghiep.User (Email, password, Name, BirthYear, isAdmin)
+VALUES ('admin@example.com', 'securepassword', 'Admin User', 1980, 1);
+
