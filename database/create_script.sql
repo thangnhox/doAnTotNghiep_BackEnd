@@ -23,12 +23,14 @@ CREATE TABLE test_DoAnTotNghiep.User (
     Name VARCHAR(255) NOT NULL,
     BirthYear INT NOT NULL,
     Avatar VARCHAR(255),
+    isAdmin BOOLEAN NOT NULL DEFAULT 0,
     INDEX (email)
 );
 
 CREATE TABLE test_DoAnTotNghiep.Discount (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(255) NOT NULL,
+    Ratio FLOAT NOT NULL,
     Expire_date DATE NOT NULL,
     Status BIT(8) NOT NULL
 );
@@ -47,18 +49,11 @@ CREATE TABLE test_DoAnTotNghiep.Books (
     FOREIGN KEY (PublisherID) REFERENCES test_DoAnTotNghiep.Publisher(ID)
 );
 
-CREATE TABLE test_DoAnTotNghiep.BookMembership (
-    MembershipID INT,
-    BooksID INT,
-    PRIMARY KEY (MembershipID, BooksID),
-    FOREIGN KEY (MembershipID) REFERENCES test_DoAnTotNghiep.Membership(ID),
-    FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID)
-);
-
 CREATE TABLE test_DoAnTotNghiep.Orders (
     UserID INT,
     BooksID INT,
     DiscountID INT,
+    TotalPrice DECIMAL(10,2) NOT NULL,
     Date DATE NOT NULL,
     PRIMARY KEY (UserID, BooksID),
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
@@ -79,6 +74,7 @@ CREATE TABLE test_DoAnTotNghiep.Subscribe (
     UserID INT NOT NULL,
     MembershipID INT NOT NULL,
     DiscountID INT,
+    TotalPrice DECIMAL(10,2) NOT NULL,
     Date DATE NOT NULL,
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
     FOREIGN KEY (MembershipID) REFERENCES test_DoAnTotNghiep.Membership(ID),

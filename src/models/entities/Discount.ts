@@ -19,6 +19,9 @@ export class Discount {
   @Column("varchar", { name: "Name", length: 255 })
   name!: string;
 
+  @Column("float", { name: "Ratio", precision: 12 })
+  ratio!: number;
+
   @Column("date", { name: "Expire_date" })
   expireDate!: string;
 
@@ -38,5 +41,5 @@ export class Discount {
   users!: User[];
 
   @OneToMany(() => Subscribe, (subscribe) => subscribe.discount)
-  subcribes!: Subscribe[];
+  subscribes!: Subscribe[];
 }

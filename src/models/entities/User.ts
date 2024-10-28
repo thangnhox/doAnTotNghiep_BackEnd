@@ -37,6 +37,9 @@ export class User {
   @Column("varchar", { name: "Avatar", nullable: true, length: 255 })
   avatar!: string | null;
 
+  @Column("tinyint", { name: "isAdmin", width: 1, default: () => "'0'" })
+  isAdmin!: boolean;
+
   @OneToMany(() => Orders, (orders) => orders.user)
   orders!: Orders[];
 
@@ -44,7 +47,7 @@ export class User {
   discounts!: Discount[];
 
   @OneToMany(() => Subscribe, (subscribe) => subscribe.user)
-  subcribes!: Subscribe[];
+  subscribes!: Subscribe[];
 
   @OneToMany(
     () => MembershipRecord,

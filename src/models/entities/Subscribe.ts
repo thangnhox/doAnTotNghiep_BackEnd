@@ -28,24 +28,27 @@ export class Subscribe {
   @Column("int", { name: "DiscountID", nullable: true })
   discountId!: number | null;
 
+  @Column("decimal", { name: "TotalPrice", precision: 10, scale: 2 })
+  totalPrice!: string;
+
   @Column("date", { name: "Date" })
   date!: string;
 
-  @ManyToOne(() => User, (user) => user.subcribes, {
+  @ManyToOne(() => User, (user) => user.subscribes, {
     onDelete: "RESTRICT",
     onUpdate: "RESTRICT",
   })
   @JoinColumn([{ name: "UserID", referencedColumnName: "id" }])
   user!: User;
 
-  @ManyToOne(() => Membership, (membership) => membership.subcribes, {
+  @ManyToOne(() => Membership, (membership) => membership.subscribes, {
     onDelete: "RESTRICT",
     onUpdate: "RESTRICT",
   })
   @JoinColumn([{ name: "MembershipID", referencedColumnName: "id" }])
   membership!: Membership;
 
-  @ManyToOne(() => Discount, (discount) => discount.subcribes, {
+  @ManyToOne(() => Discount, (discount) => discount.subscribes, {
     onDelete: "RESTRICT",
     onUpdate: "RESTRICT",
   })

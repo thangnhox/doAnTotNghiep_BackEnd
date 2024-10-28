@@ -17,6 +17,9 @@ export class Orders {
   @Column("int", { name: "DiscountID", nullable: true })
   discountId!: number | null;
 
+  @Column("decimal", { name: "TotalPrice", precision: 10, scale: 2 })
+  totalPrice!: string;
+
   @Column("date", { name: "Date" })
   date!: string;
 

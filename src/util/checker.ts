@@ -1,0 +1,13 @@
+import { Request, Response } from 'express';
+
+export function checkReqUser(req: Request, res: Response): boolean {
+    if (req.user === undefined) {
+        res.status(500).json({ message: "Error getting data from authentication" });
+        return false;
+    }
+    if (!req.user.isAdmin) {
+        res.status(403).send('Invalid user');
+        return false;
+    }
+    return true;
+}

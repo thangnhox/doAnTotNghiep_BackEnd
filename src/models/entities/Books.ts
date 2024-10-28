@@ -10,7 +10,6 @@ import {
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { Publisher } from "./Publisher";
-import { Membership } from "./Membership";
 import { Orders } from "./Orders";
 import { Notes } from "./Notes";
 import { Category } from "./Category";
@@ -57,9 +56,6 @@ export class Books {
   })
   @JoinColumn([{ name: "PublisherID", referencedColumnName: "id" }])
   publisher!: Publisher;
-
-  @ManyToMany(() => Membership, (membership) => membership.books)
-  memberships!: Membership[];
 
   @OneToMany(() => Orders, (orders) => orders.books)
   orders!: Orders[];

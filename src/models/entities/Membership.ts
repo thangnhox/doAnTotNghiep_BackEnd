@@ -3,12 +3,9 @@ import {
   Column,
   Entity,
   Index,
-  JoinTable,
-  ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Books } from "./Books";
 import { Subscribe } from "./Subscribe";
 import { MembershipRecord } from "./MembershipRecord";
 
@@ -30,17 +27,8 @@ export class Membership {
   @Column("decimal", { name: "Price", precision: 10, scale: 2 })
   price!: string;
 
-  @ManyToMany(() => Books, (books) => books.memberships)
-  @JoinTable({
-    name: "BookMembership",
-    joinColumns: [{ name: "MembershipID", referencedColumnName: "id" }],
-    inverseJoinColumns: [{ name: "BooksID", referencedColumnName: "id" }],
-    schema: "test_doantotnghiep",
-  })
-  books!: Books[];
-
   @OneToMany(() => Subscribe, (subscribe) => subscribe.membership)
-  subcribes!: Subscribe[];
+  subscribes!: Subscribe[];
 
   @OneToMany(
     () => MembershipRecord,
