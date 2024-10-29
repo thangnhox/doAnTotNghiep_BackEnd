@@ -19,7 +19,7 @@ class AdminController {
             const userRepository = AppDataSource.getRepository(User);
             const userData = await userRepository.findOne({ where: { email } });
             if (!userData) {
-                res.status(404).json({ message: "user email not found" });
+                res.status(401).json({ message: "access denied" });
                 return;
             }
             if (userData.password !== password || !userData.isAdmin) {
