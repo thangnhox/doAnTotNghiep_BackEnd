@@ -38,7 +38,7 @@ export class User {
   avatar!: string | null;
 
   @Column("tinyint", { name: "isAdmin", width: 1, default: () => "'0'" })
-  isAdmin!: boolean;
+  isAdmin!: number;
 
   @OneToMany(() => Orders, (orders) => orders.user)
   orders!: Orders[];

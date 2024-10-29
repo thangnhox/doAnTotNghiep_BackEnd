@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { createAppDataSource } from '../models/repository/Datasource';
 import { User } from '../models/entities/User';
 import { makeAuthenticationToken } from '../services/authentication';
+import { checkReqUser } from '../util/checker';
 
 class AdminController {
     async login(req: Request, res: Response): Promise<void> {
@@ -34,20 +35,37 @@ class AdminController {
         }
     }
 
-    async isAdmin(id: number): Promise<boolean> {
+    async changePassword(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        if (
+            !req.body.currentPassword ||
+            !req.body.newPassword
+        ) {
+            res.status(400).json({ message: "invalid request" });
+            return;
+        }
+
+        if (req.body.currentPassword !== req.user!.password) {
+            res.status(403).json({ message: "wrong password" });
+            return;
+        }
+
         const AppDataSource = createAppDataSource();
         await AppDataSource.initialize();
 
         try {
             const userRepository = AppDataSource.getRepository(User);
-            const user = await userRepository.findOne({ where: { id } });
-            if (user == null) {
-                return false;
-            }
-            return user.isAdmin;
-        } catch (error) {
-            console.error("Error checking admin status:", error);
-            return false;
+
+            req.user!.password = req.body.newPassword;
+
+            const savedChanged = await userRepository.save(req.user!);
+
+            const newToken = makeAuthenticationToken(savedChanged.id, savedChanged.email);
+
+            res.status(200).json({message: "change password success", data: savedChanged, token: newToken});
+        } catch (error: any) {
+            res.status(500).json({ message: "Database server error", error });
         } finally {
             await AppDataSource.destroy();
         }
