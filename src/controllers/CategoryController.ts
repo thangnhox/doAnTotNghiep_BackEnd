@@ -9,8 +9,23 @@ class CategoryController {
         
         try {
             const categoryRepository = AppDataSource.getRepository(Category);
-            const categories = await categoryRepository.find();
-            res.status(200).json({ message: "fetch success", data: categories });
+            const categories = await categoryRepository.find({ relations: ['books'] });
+
+            const detail = req.query.detail === 'true';
+
+            const formattedCategories = categories.map(category => {
+                if (detail) {
+                    return category; // Default format
+                } else {
+                    return {
+                        id: category.id,
+                        name: category.name,
+                        books: category.books.length
+                    };
+                }
+            });
+
+            res.status(200).json({ message: "fetch success", data: formattedCategories });
         } catch (error: any) {
             res.status(500).json({ message: "failed to fetch categories", error: error.message });
         } finally {

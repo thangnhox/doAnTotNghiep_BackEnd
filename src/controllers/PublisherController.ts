@@ -10,8 +10,23 @@ class PublisherController {
         
         try {
             const publisherRepository = AppDataSource.getRepository(Publisher);
-            const publishers = await publisherRepository.find();
-            res.status(200).json({ message: "fetch success", data: publishers });
+            const publishers = await publisherRepository.find({ relations: ['books'] });
+
+            const detail = req.query.detail === 'true';
+
+            const formattedPublishers = publishers.map(publisher => {
+                if (detail) {
+                    return publisher;
+                } else {
+                    return {
+                        id: publisher.id,
+                        name: publisher.name,
+                        books: publisher.books.length
+                    }
+                }
+            });
+
+            res.status(200).json({ message: "fetch success", data: formattedPublishers });
         } catch (error: any) {
             res.status(500).json({ message: "failed to fetch publishers", error: error.message });
         } finally {
