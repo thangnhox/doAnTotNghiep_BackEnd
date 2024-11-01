@@ -1,22 +1,31 @@
 import { Request, Response } from 'express';
-import { createAppDataSource } from '../models/repository/Datasource';
+import { AppDataSource } from '../models/repository/Datasource';
 import { Books } from '../models/entities/Books';
 import { Publisher } from '../models/entities/Publisher';
 import { checkReqUser } from '../util/checker';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
-
         try {
-            const booksRepository = AppDataSource.getRepository(Books);
-            const books = await booksRepository.find();
-            res.status(200).json({ message: "fetch success", data: books });
+            const booksRepository = (await AppDataSource.getInstace()).getRepository(Books);
+
+            const page = parseInt(req.query.page as string, 10) || 1;
+            const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
+            const offset = (page - 1) * pageSize;
+
+            const [books, total] = await booksRepository.findAndCount({
+                take: pageSize,
+                skip: offset
+            });
+
+            if (books.length === 0) {
+                res.status(404).json({message: "out of bounds"});
+                return;
+            }
+
+            res.status(200).json({ message: "fetch success", data: books, total, page, pageSize });
         } catch (error: any) {
             res.status(500).json({ message: "failed to fetch books", error: error.message });
-        } finally {
-            await AppDataSource.destroy();
         }
     }
 
@@ -43,20 +52,18 @@ class BooksController {
             req.body.publishDate = formattedDate;
         }
 
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
+        
 
-        const publisherRepository = AppDataSource.getRepository(Publisher);
+        const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
         const publisher = await publisherRepository.findOne({ where: { id: req.body.publisherId } });
 
         if (!publisher) {
             res.status(404).json({ message: "Publisher not found" });
-            await AppDataSource.destroy();
             return;
         }
 
         try {
-            const booksRepository = AppDataSource.getRepository(Books);
+            const booksRepository = (await AppDataSource.getInstace()).getRepository(Books);
             const book = await booksRepository.findOne({ where: { title: req.body.title } });
             if (book != null) {
                 res.status(400).json({message: "Book title exists", data: book});
@@ -81,8 +88,6 @@ class BooksController {
             res.status(201).json({message: "Book add success", data: savedBook});
         } catch (error: any) {
             res.status(500).json({ message: "failed to fetch books", error: error.message });
-        } finally {
-            await AppDataSource.destroy();
         }
     }
 

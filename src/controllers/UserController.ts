@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { createAppDataSource } from '../models/repository/Datasource';
 import { User } from '../models/entities/User';
 import { makeAuthenticationToken, makeValidationToken } from '../services/authentication';
 import jwt from 'jsonwebtoken';
+import { AppDataSource } from '../models/repository/Datasource';
 
 class UserController {
     async login(req: Request, res: Response): Promise<void> {
@@ -11,11 +11,9 @@ class UserController {
             res.status(400).send("invalid request");
             return;
         }
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
 
         try {
-            const userRepository = AppDataSource.getRepository(User);
+            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
             const userData = await userRepository.findOne({ where: { email } });
             if (!userData) {
                 res.status(404).json({ message: "user email not found" });
@@ -31,8 +29,6 @@ class UserController {
             }
         } catch (error: any) {
             res.status(500).json({ message: "Authentication server error" });
-        } finally {
-            await AppDataSource.destroy();
         }
     }
     
@@ -56,11 +52,10 @@ class UserController {
             newUser.avatar = req.body.avatar;
         }
 
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
+        
 
         try {
-            const userRepository = AppDataSource.getRepository(User);
+            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
 
             const email = req.body.email;
             const existingUser = await userRepository.findOne({ where: { email } });
@@ -79,7 +74,7 @@ class UserController {
             // TODO: gửi mail chứa url có token
             res.status(201).json({ message: "create user success", token: newUserToken });
 
-            await AppDataSource.destroy();
+            await (await AppDataSource.getInstace()).destroy();
         } catch (error: any) {
             res.status(500).json({ message: "Authentication server error" });
         }
@@ -89,9 +84,6 @@ class UserController {
     async validateUser(req: Request, res: Response): Promise<void> {
         const validateToken = req.params.token as string;
         const secretKey = process.env.TOKEN_KEY as string;
-
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
 
         try {
             const decoded = jwt.verify(validateToken, secretKey) as { userEmail: string, userName: string, userPassword: string, userAvatar: string | null, userBirthYear: number };
@@ -103,7 +95,7 @@ class UserController {
             user.avatar = decoded.userAvatar;
             user.birthYear = decoded.userBirthYear;
 
-            const userRepository = AppDataSource.getRepository(User);
+            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
 
             const toDatabase = userRepository.create(user);
             const savedUser = await userRepository.save(toDatabase);
@@ -113,22 +105,18 @@ class UserController {
             // TODO: make use of this token
 
             res.status(201).json({ message: "User validated", token: newUserToken });
-            await AppDataSource.destroy();
+            await (await AppDataSource.getInstace()).destroy();
         } catch (err: any) {
             res.status(400).json({ message: "invalid request" });
-        } finally {
-            await AppDataSource.destroy();
         }
 
     }
 
 
     async getUser(id: number): Promise<User | null> {
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
 
         try {
-            const userRepository = AppDataSource.getRepository(User);
+            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
             const user = await userRepository.findOne({ where: { id } });
             if (user == null) {
                 return null;
@@ -137,8 +125,6 @@ class UserController {
         } catch (error) {
             console.error("Error checking admin status:", error);
             return null;
-        } finally {
-            await AppDataSource.destroy();
         }
     }
 

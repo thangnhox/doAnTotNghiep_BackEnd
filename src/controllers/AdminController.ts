@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createAppDataSource } from '../models/repository/Datasource';
+import { AppDataSource } from '../models/repository/Datasource';
 import { User } from '../models/entities/User';
 import { makeAuthenticationToken } from '../services/authentication';
 import { checkReqUser } from '../util/checker';
@@ -12,11 +12,8 @@ class AdminController {
             return;
         }
 
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
-
         try {
-            const userRepository = AppDataSource.getRepository(User);
+            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
             const userData = await userRepository.findOne({ where: { email } });
             if (!userData) {
                 res.status(401).json({ message: "access denied" });
@@ -30,8 +27,6 @@ class AdminController {
             }
         } catch (error: any) {
             res.status(500).json({ message: "Authentication server error" });
-        } finally {
-            await AppDataSource.destroy();
         }
     }
 
@@ -51,11 +46,8 @@ class AdminController {
             return;
         }
 
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
-
         try {
-            const userRepository = AppDataSource.getRepository(User);
+            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
 
             req.user!.password = req.body.newPassword;
 
@@ -66,8 +58,6 @@ class AdminController {
             res.status(200).json({message: "change password success", data: savedChanged, token: newToken});
         } catch (error: any) {
             res.status(500).json({ message: "Database server error", error });
-        } finally {
-            await AppDataSource.destroy();
         }
     }
 }

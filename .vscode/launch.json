@@ -4,48 +4,23 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Run Debug Script",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run",
-                "debug"
-            ],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Run Directly",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run",
-                "run"
-            ],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "node",
-            "request": "launch",
             "name": "Run Directly ts-node",
-            "runtimeExecutable": "npx",
+            "runtimeExecutable": "npm",
             "runtimeArgs": [
-                "ts-node",
-                "src/index.ts"
+                "run",
+                "ts-node"
             ],
             "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
+            "internalConsoleOptions": "neverOpen",
         },
         {
             "type": "node",
             "request": "launch",
             "name": "Run live debug nodemon",
-            "runtimeExecutable": "nodemon",
+            "runtimeExecutable": "npm",
             "runtimeArgs": [
-                "--exec",
-                "ts-node",
-                "src/index.ts"
+                "run",
+                "nodemon"
             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"

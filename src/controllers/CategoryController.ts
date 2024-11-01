@@ -1,21 +1,36 @@
 import { Request, Response } from 'express';
 import { Category } from '../models/entities/Category';
-import { createAppDataSource } from '../models/repository/Datasource';
+import { AppDataSource } from '../models/repository/Datasource';
 
 class CategoryController {
     async all(req: Request, res: Response): Promise<void> {
-        const AppDataSource = createAppDataSource();
-        await AppDataSource.initialize();
-        
         try {
-            const categoryRepository = AppDataSource.getRepository(Category);
-            const categories = await categoryRepository.find({ relations: ['books'] });
+            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+
+            const page = parseInt(req.query.page as string, 10) || 1;
+            const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
+            const offset = (page - 1) * pageSize;
+
+            const [categories, total] = await categoryRepository.findAndCount({ 
+                relations: ['books'],
+                take: pageSize,
+                skip: offset
+            });
 
             const detail = req.query.detail === 'true';
 
             const formattedCategories = categories.map(category => {
                 if (detail) {
-                    return category; // Default format
+                    const bookCount = category.books.length;
+                    const booksDisplay = bookCount > 3
+                        ? [...category.books.slice(0, 3), { title: '...more', id: null }]
+                        : category.books;
+                    return {
+                        id: category.id,
+                        name: category.name,
+                        booklist: booksDisplay,
+                        books: bookCount
+                    };
                 } else {
                     return {
                         id: category.id,
@@ -25,11 +40,9 @@ class CategoryController {
                 }
             });
 
-            res.status(200).json({ message: "fetch success", data: formattedCategories });
+            res.status(200).json({ message: "fetch success", data: formattedCategories, total, page, pageSize });
         } catch (error: any) {
             res.status(500).json({ message: "failed to fetch categories", error: error.message });
-        } finally {
-            await AppDataSource.destroy();
         }
     }
 }

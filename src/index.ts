@@ -13,6 +13,7 @@ import user from './routes/user';
 import admin from './routes/admin';
 import books from './routes/books';
 import publisher from './routes/publisher';
+import { AppDataSource } from './models/repository/Datasource';
 
 const app = express();
 const port = 3000;
@@ -29,6 +30,33 @@ app.use('/books', books);
 app.use('/publisher', publisher);
 app.use('/', index);
 
-app.listen(port, () => {
+const server = app.listen(port, async () => {
   console.log(`Server running on http://localhost:${port}`);
+  await AppDataSource.getInstace();
+});
+
+['SIGINT', 'SIGTERM'].forEach(signal => {
+  process.on(signal, async () => {
+      console.log(`${signal} signal received. Closing server.`);
+      server.close(async () => {
+          await AppDataSource.shutdown();
+          console.log('Database connection closed.');
+          process.exit(0);
+      });
+  });
+}); 
+
+process.once('SIGUSR2', async () => {
+  console.log('SIGUSR2 signal received. Restarting server.');
+  server.close(async () => {
+      await AppDataSource.shutdown();
+      console.log('Database connection closed.');
+      process.kill(process.pid, 'SIGUSR2');
+  });
+});
+
+process.on('exit', async (code) => {
+  console.log(`Process exiting with code: ${code}`);
+  await AppDataSource.shutdown();
+  console.log('Database connection closed.');
 });

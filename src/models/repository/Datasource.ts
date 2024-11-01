@@ -11,7 +11,7 @@ import { BookRequest } from "../entities/BookRequest";
 import { MembershipRecord } from "../entities/MembershipRecord";
 import { Subscribe } from "../entities/Subscribe";
 
-export function createAppDataSource(): DataSource {
+function createAppDataSource(): DataSource {
     return new DataSource({
         type: process.env.DB_TYPE as any,
         host: process.env.DB_HOST,
@@ -25,4 +25,24 @@ export function createAppDataSource(): DataSource {
         migrations: [],
         subscribers: [],
     });
+}
+
+export class AppDataSource {
+    private static appDataSource: DataSource = createAppDataSource();
+
+    static async getInstace(): Promise<DataSource> {
+        if (!this.appDataSource.isInitialized) {
+            try {
+                await this.appDataSource.initialize();
+            } catch (err: any) {
+                throw(err);
+            }
+        }
+        return this.appDataSource;
+    }
+
+    static async shutdown(): Promise<void> {
+        if (!this.appDataSource.isInitialized) return;
+        await this.appDataSource.destroy();
+    }
 }

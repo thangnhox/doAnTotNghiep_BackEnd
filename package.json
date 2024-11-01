@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc",
     "run": "node dist/index.js",
-    "debug": "npm run build && npm run run"
+    "debug": "npm run build && npm run run",
+    "ts-node": "npx ts-node src/index.ts",
+    "nodemon": "nodemon --exec ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
