@@ -2,21 +2,23 @@ import "reflect-metadata";
 import {
   Column,
   Entity,
+  Index,
   JoinTable,
   ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { Orders } from "./Orders";
-import { User } from "./User";
 import { Subscribe } from "./Subscribe";
+import { User } from "./User";
 
+@Index("Name", ["name"], { unique: true })
 @Entity("Discount", { schema: "test_doantotnghiep" })
 export class Discount {
   @PrimaryGeneratedColumn({ type: "int", name: "ID" })
   id!: number;
 
-  @Column("varchar", { name: "Name", length: 255 })
+  @Column("varchar", { name: "Name", unique: true, length: 255 })
   name!: string;
 
   @Column("float", { name: "Ratio", precision: 12 })
@@ -31,6 +33,9 @@ export class Discount {
   @OneToMany(() => Orders, (orders) => orders.discount)
   orders!: Orders[];
 
+  @OneToMany(() => Subscribe, (subscribe) => subscribe.discount)
+  subscribes!: Subscribe[];
+
   @ManyToMany(() => User, (user) => user.discounts)
   @JoinTable({
     name: "Used",
@@ -39,7 +44,4 @@ export class Discount {
     schema: "test_doantotnghiep",
   })
   users!: User[];
-
-  @OneToMany(() => Subscribe, (subscribe) => subscribe.discount)
-  subscribes!: Subscribe[];
 }

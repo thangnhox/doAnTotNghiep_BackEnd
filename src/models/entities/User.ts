@@ -8,11 +8,12 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Orders } from "./Orders";
-import { Discount } from "./Discount";
-import { Subscribe } from "./Subscribe";
-import { MembershipRecord } from "./MembershipRecord";
 import { Notes } from "./Notes";
+import { Tags } from "./Tags";
+import { Orders } from "./Orders";
+import { Subscribe } from "./Subscribe";
+import { Discount } from "./Discount";
+import { MembershipRecord } from "./MembershipRecord";
 import { Books } from "./Books";
 import { BookRequest } from "./BookRequest";
 
@@ -40,23 +41,26 @@ export class User {
   @Column("tinyint", { name: "isAdmin", width: 1, default: () => "'0'" })
   isAdmin!: number;
 
+  @OneToMany(() => Notes, (notes) => notes.user)
+  notes!: Notes[];
+
+  @OneToMany(() => Tags, (tags) => tags.user)
+  tags!: Tags[];
+
   @OneToMany(() => Orders, (orders) => orders.user)
   orders!: Orders[];
 
-  @ManyToMany(() => Discount, (discount) => discount.users)
-  discounts!: Discount[];
-
   @OneToMany(() => Subscribe, (subscribe) => subscribe.user)
   subscribes!: Subscribe[];
+
+  @ManyToMany(() => Discount, (discount) => discount.users)
+  discounts!: Discount[];
 
   @OneToMany(
     () => MembershipRecord,
     (membershipRecord) => membershipRecord.user
   )
   membershipRecords!: MembershipRecord[];
-
-  @OneToMany(() => Notes, (notes) => notes.user)
-  notes!: Notes[];
 
   @ManyToMany(() => Books, (books) => books.users)
   @JoinTable({

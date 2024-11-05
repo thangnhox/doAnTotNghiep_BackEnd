@@ -1,6 +1,6 @@
 CREATE TABLE test_DoAnTotNghiep.Publisher (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL
+    Name VARCHAR(255) UNIQUE NOT NULL
 );
 
 CREATE TABLE test_DoAnTotNghiep.Category (
@@ -29,24 +29,76 @@ CREATE TABLE test_DoAnTotNghiep.User (
 
 CREATE TABLE test_DoAnTotNghiep.Discount (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
+    Name VARCHAR(255) UNIQUE NOT NULL,
     Ratio FLOAT NOT NULL,
     Expire_date DATE NOT NULL,
     Status BIT(8) NOT NULL
 );
 
+CREATE TABLE test_DoAnTotNghiep.Authors (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(255) NOT NULL,
+    BirthDate DATE,
+    Nationality VARCHAR(100),
+    Description TEXT NOT NULL,
+    UNIQUE (Name, BirthDate),
+    CHECK (CHAR_LENGTH(Description) >= 25)
+);
+
 CREATE TABLE test_DoAnTotNghiep.Books (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     Title VARCHAR(255) NOT NULL,
+    Description TEXT NOT NULL,
+    PageCount INT NOT NULL,
     Price DECIMAL(10, 2) NOT NULL,
     file_url VARCHAR(255) NOT NULL,
     cover_url VARCHAR(255),
     status BIT(8) NOT NULL,
+    AuthorsID INT NOT NULL,
     PublisherID INT NOT NULL,
     PublishDate DATE NOT NULL,
     IsRecommended INT DEFAULT 0,
     INDEX (Title),
-    FOREIGN KEY (PublisherID) REFERENCES test_DoAnTotNghiep.Publisher(ID)
+    FOREIGN KEY (PublisherID) REFERENCES test_DoAnTotNghiep.Publisher(ID),
+    FOREIGN KEY (AuthorsID) REFERENCES test_DoAnTotNghiep.Authors(ID),
+    CHECK (CHAR_LENGTH(Description) >= 20)
+);
+
+CREATE TABLE test_DoAnTotNghiep.Notes (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT NOT NULL,
+    BooksID INT NOT NULL,
+    Page INT NOT NULL DEFAULT -1,
+    Detail TEXT NULL,
+    FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
+    FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID),
+    UNIQUE (UserID, BooksID, Page)
+);
+
+CREATE TABLE test_DoAnTotNghiep.Tags (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT NOT NULL,
+    Name VARCHAR(255) NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
+    UNIQUE (UserID, Name)
+);
+
+CREATE TABLE test_DoAnTotNghiep.TagsBooks (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    TagsID INT NOT NULL,
+    BooksID INT NOT NULL,
+    Page INT NOT NULL DEFAULT -1,
+    FOREIGN KEY (TagsID) REFERENCES test_DoAnTotNghiep.Tags(ID),
+    FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID),
+    UNIQUE (TagsID, BooksID, Page)
+);
+
+CREATE TABLE test_DoAnTotNghiep.TagsNotes(
+    TagsID INT NOT NULL,
+    NotesID INT NOT NULL,
+    FOREIGN KEY (TagsID) REFERENCES test_DoAnTotNghiep.Tags(ID),
+    FOREIGN KEY (NotesID) REFERENCES test_DoAnTotNghiep.Notes(ID),
+    PRIMARY KEY (TagsID, NotesID)
 );
 
 CREATE TABLE test_DoAnTotNghiep.Orders (
@@ -88,16 +140,6 @@ CREATE TABLE test_DoAnTotNghiep.MembershipRecord (
     PRIMARY KEY (UserID, MembershipID),
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
     FOREIGN KEY (MembershipID) REFERENCES test_DoAnTotNghiep.Membership(ID)
-);
-
-CREATE TABLE test_DoAnTotNghiep.Notes (
-    UserID INT,
-    BooksID INT,
-    Page INT,
-    Detail TEXT NULL,
-    PRIMARY KEY (UserID, BooksID, Page),
-    FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
-    FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID)
 );
 
 CREATE TABLE test_DoAnTotNghiep.BookCategory (
@@ -158,6 +200,38 @@ STARTS CURRENT_DATE + INTERVAL 1 DAY
 DO
 DELETE FROM test_DoAnTotNghiep.MembershipRecord
 WHERE Expire_date = CURDATE() - INTERVAL 1 DAY;
+
+
+CREATE VIEW test_DoAnTotNghiep.BookDetails AS
+SELECT 
+    b.ID AS BookID,
+    b.Title,
+    b.Description,
+    b.PageCount,
+    b.Price,
+    b.file_url,
+    b.cover_url,
+    b.status,
+    b.PublishDate,
+    b.IsRecommended,
+    p.Name AS PublisherName,
+    a.Name AS AuthorName,
+    GROUP_CONCAT(c.Name) AS Categories,
+    COUNT(l.UserID) AS LikesCount
+FROM 
+    test_DoAnTotNghiep.Books b
+JOIN 
+    test_DoAnTotNghiep.Publisher p ON b.PublisherID = p.ID
+JOIN 
+    test_DoAnTotNghiep.Authors a ON b.AuthorsID = a.ID
+LEFT JOIN 
+    test_DoAnTotNghiep.BookCategory bc ON b.ID = bc.BooksID
+LEFT JOIN 
+    test_DoAnTotNghiep.Category c ON bc.CategoryID = c.ID
+LEFT JOIN 
+    test_DoAnTotNghiep.Likes l ON b.ID = l.BooksID
+GROUP BY 
+    b.ID, b.Title, b.Description, b.PageCount, b.Price, b.file_url, b.cover_url, b.status, b.PublishDate, b.IsRecommended, p.Name, a.Name;
 
 
 INSERT INTO test_DoAnTotNghiep.User (Email, password, Name, BirthYear, isAdmin)

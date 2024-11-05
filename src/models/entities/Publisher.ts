@@ -1,5 +1,11 @@
 import "reflect-metadata";
-import { Column, Entity, Index, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  Index,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Books } from "./Books";
 
 @Index("Name", ["name"], { unique: true })
