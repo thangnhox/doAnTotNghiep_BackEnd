@@ -3,6 +3,7 @@ import { AppDataSource } from '../models/repository/Datasource';
 import { Books } from '../models/entities/Books';
 import { Publisher } from '../models/entities/Publisher';
 import { checkReqUser } from '../util/checker';
+import { Authors } from '../models/entities/Authors';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
@@ -36,7 +37,11 @@ class BooksController {
             !req.body.title ||
             !req.body.price ||
             !req.body.fileUrl ||
-            !req.body.publisherId
+            !req.body.publisherId ||
+            !req.body.description || req.body.description.length < 20 ||
+            !req.body.pageCount ||
+            !req.body.authorsID ||
+            !req.body.coverUrl
         ) {
             res.status(400).send("invalid request");
             return;
@@ -51,7 +56,6 @@ class BooksController {
             const formattedDate = currentDate.toISOString().split('T')[0];
             req.body.publishDate = formattedDate;
         }
-
         
 
         const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
@@ -59,6 +63,14 @@ class BooksController {
 
         if (!publisher) {
             res.status(404).json({ message: "Publisher not found" });
+            return;
+        }
+
+        const AuthorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+        const author = await AuthorRepository.findOne({ where: { id: req.body.authorsID } });
+
+        if (!author) {
+            res.status(404).json({ message: "Author not found" });
             return;
         }
 
@@ -77,17 +89,15 @@ class BooksController {
             newBook.publisherId = req.body.publisherId;
             newBook.publishDate = req.body.publishDate;
             newBook.status = req.body.status;
-
-            if (req.body.coverUrl != null) {
-                newBook.coverUrl = req.body.coverUrl;
-            }
+            newBook.authorsId = req.body.authorsID;
+            newBook.coverUrl = req.body.coverUrl;
 
             const toDatabase = booksRepository.create(newBook);
             const savedBook = await booksRepository.save(toDatabase);
 
             res.status(201).json({message: "Book add success", data: savedBook});
         } catch (error: any) {
-            res.status(500).json({ message: "failed to fetch books", error: error.message });
+            res.status(500).json({ message: "failed to add books", error: error.message });
         }
     }
 
