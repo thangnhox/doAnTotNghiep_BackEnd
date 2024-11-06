@@ -35,4 +35,6 @@ export class Membership {
     (membershipRecord) => membershipRecord.membership
   )
   membershipRecords!: MembershipRecord[];
+
+  static readonly validSortColumn = Object.freeze(['id', 'name', 'price']);
 }

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Publisher } from '../models/entities/Publisher';
-import { checkReqUser } from '../util/checker';
+import { checkReqUser, sortValidator } from '../util/checker';
 import { AppDataSource } from '../models/repository/Datasource';
 
 class PublisherController {
@@ -12,10 +12,15 @@ class PublisherController {
             const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
             const offset = (page - 1) * pageSize;
 
+            const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Publisher);
+
             const [publishers, total] = await publisherRepository.findAndCount({
                 relations: ['books'],
                 take: pageSize,
                 skip: offset,
+                order: {
+                    [sort]: order.toUpperCase() as 'ASC' | 'DESC'
+                }
             });
 
             if (publishers.length === 0) {
@@ -46,7 +51,12 @@ class PublisherController {
                 }
             });
 
-            res.status(200).json({ message: "fetch success", data: formattedPublishers, total, page, pageSize });
+            res.status(200).json({
+                message: "fetch success",
+                data: formattedPublishers,
+                total, page, pageSize,
+                warnings
+            });
         } catch (error: any) {
             res.status(500).json({ message: "failed to fetch publishers", error: error.message });
         }
@@ -127,9 +137,13 @@ class PublisherController {
                 const page = parseInt(req.query.page as string, 10) || 1;
                 const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
                 const offset = (page - 1) * pageSize;
+
+                const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Publisher);
+
                 const [publishers, total] = await publisherRepository.createQueryBuilder("publisher")
                     .leftJoinAndSelect("publisher.books", "book")
                     .where("publisher.name LIKE :name", { name: `%${name}%` })
+                    .orderBy(`publisher.${sort}`, order.toUpperCase() as 'ASC' | 'DESC')
                     .skip(offset).take(pageSize).getManyAndCount();
 
                 if (publishers.length === 0) {
@@ -158,7 +172,7 @@ class PublisherController {
                     }
                 });
 
-                res.status(200).json({ message: "Publishers found", data: formattedPublishers, total, page, pageSize });
+                res.status(200).json({ message: "Publishers found", data: formattedPublishers, total, page, pageSize, warnings });
             }
         } catch (error: any) {
             res.status(500).json({ message: "Failed to fetch publisher(s)", error: error.message });

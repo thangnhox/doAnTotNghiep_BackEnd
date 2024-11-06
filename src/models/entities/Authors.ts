@@ -28,4 +28,6 @@ export class Authors {
 
   @OneToMany(() => Books, (books) => books.authors)
   books!: Books[];
+
+  static readonly validSortColumn = Object.freeze(['id', 'name', 'nationality']);
 }

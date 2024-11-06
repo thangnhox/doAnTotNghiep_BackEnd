@@ -26,4 +26,6 @@ export class Category {
     schema: "test_doantotnghiep",
   })
   books!: Books[];
+
+  static readonly validSortColumn = Object.freeze(['id', 'name']);
 }

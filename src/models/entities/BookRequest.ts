@@ -31,4 +31,6 @@ export class BookRequest {
   })
   @JoinColumn([{ name: "UserID", referencedColumnName: "id" }])
   user!: User;
+
+  static readonly validSortColumn = Object.freeze(['id', 'title', 'userId']);
 }

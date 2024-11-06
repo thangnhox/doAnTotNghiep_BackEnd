@@ -90,4 +90,6 @@ export class Books {
 
   @ManyToMany(() => User, (user) => user.books)
   users!: User[];
+
+  static readonly validSortColumn = Object.freeze(['id', 'title', 'price', 'publisherId', 'authorsId']);
 }

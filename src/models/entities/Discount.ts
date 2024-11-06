@@ -44,4 +44,6 @@ export class Discount {
     schema: "test_doantotnghiep",
   })
   users!: User[];
+
+  static readonly validSortColumn = Object.freeze(['id', 'name', 'ratio']);
 }

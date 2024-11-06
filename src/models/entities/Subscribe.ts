@@ -54,4 +54,6 @@ export class Subscribe {
   })
   @JoinColumn([{ name: "DiscountID", referencedColumnName: "id" }])
   discount!: Discount;
+
+  static readonly validSortColumn = Object.freeze(['id', 'userId', 'totalPrice', 'date']);
 }

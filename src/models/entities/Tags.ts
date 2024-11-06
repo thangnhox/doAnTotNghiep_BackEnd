@@ -44,4 +44,6 @@ export class Tags {
     schema: "test_doantotnghiep",
   })
   notes!: Notes[];
+
+  static readonly validSortColumn = Object.freeze(['id', 'name', 'userId']);
 }

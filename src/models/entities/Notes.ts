@@ -47,4 +47,6 @@ export class Notes {
 
   @ManyToMany(() => Tags, (tags) => tags.notes)
   tags!: Tags[];
+
+  static readonly validSortColumn = Object.freeze(['id', 'booksId']);
 }

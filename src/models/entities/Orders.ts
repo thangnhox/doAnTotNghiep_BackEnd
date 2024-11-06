@@ -43,4 +43,6 @@ export class Orders {
   })
   @JoinColumn([{ name: "DiscountID", referencedColumnName: "id" }])
   discount!: Discount;
+
+  static readonly validSortColumn = Object.freeze(['userId', 'date', 'totalPrice']);
 }

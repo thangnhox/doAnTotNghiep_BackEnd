@@ -28,4 +28,6 @@ export class MembershipRecord {
   })
   @JoinColumn([{ name: "MembershipID", referencedColumnName: "id" }])
   membership!: Membership;
+
+  static readonly validSortColumn = Object.freeze(['userId', 'membershipId', 'expireDate']);
 }

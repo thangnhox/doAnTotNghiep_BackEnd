@@ -73,4 +73,6 @@ export class User {
 
   @OneToMany(() => BookRequest, (bookRequest) => bookRequest.user)
   bookRequests!: BookRequest[];
+
+  static readonly validSortColumn = Object.freeze(['id', 'name']);
 }

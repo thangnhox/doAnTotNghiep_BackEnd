@@ -39,4 +39,6 @@ export class TagsBooks {
   })
   @JoinColumn([{ name: "BooksID", referencedColumnName: "id" }])
   books!: Books;
+
+  static readonly validSortColumn = Object.freeze(['id', 'name']);
 }
