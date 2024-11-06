@@ -55,6 +55,8 @@ class BooksController {
             const currentDate = new Date();
             const formattedDate = currentDate.toISOString().split('T')[0];
             req.body.publishDate = formattedDate;
+        } else {
+            req.body.publishDate = (req.body.publishDate as Date).toISOString().split('T')[0];
         }
         
 

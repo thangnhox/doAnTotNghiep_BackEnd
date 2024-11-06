@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Category } from '../models/entities/Category';
 import { AppDataSource } from '../models/repository/Datasource';
-import { orderChecker, sortValidator } from '../util/checker';
+import { sortValidator } from '../util/checker';
 
 class CategoryController {
     async all(req: Request, res: Response): Promise<void> {

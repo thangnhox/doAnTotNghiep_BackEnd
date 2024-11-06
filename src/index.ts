@@ -14,6 +14,7 @@ import admin from './routes/admin';
 import books from './routes/books';
 import publisher from './routes/publisher';
 import { AppDataSource } from './models/repository/Datasource';
+import authors from './routes/authors';
 
 const app = express();
 const port = 3000;
@@ -28,6 +29,7 @@ app.use('/user', user);
 app.use('/admin', admin);
 app.use('/books', books);
 app.use('/publisher', publisher);
+app.use('/authors', authors);
 app.use('/', index);
 
 const server = app.listen(port, async () => {
