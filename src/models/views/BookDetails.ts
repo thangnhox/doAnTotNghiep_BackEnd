@@ -44,4 +44,11 @@ export class BookDetails {
 
     @ViewColumn()
     LikesCount!: number;
+
+    static readonly validSortColumn = Object.freeze([
+        'BookID', 'Title', 'Description', 'PageCount', 'Price',
+        'file_url', 'cover_url', 'status', 'PublishDate',
+        'IsRecommended', 'PublisherName', 'AuthorName',
+        'Categories', 'LikesCount'
+    ]);
 }

@@ -2,29 +2,47 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../models/repository/Datasource';
 import { Books } from '../models/entities/Books';
 import { Publisher } from '../models/entities/Publisher';
-import { checkReqUser } from '../util/checker';
+import { checkReqUser, sortValidator } from '../util/checker';
 import { Authors } from '../models/entities/Authors';
+import { BookDetails } from '../models/views/BookDetails';
+import { Category } from '../models/entities/Category';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
         try {
-            const booksRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const booksRepository = (await AppDataSource.getInstace()).getRepository(BookDetails);
 
             const page = parseInt(req.query.page as string, 10) || 1;
             const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
             const offset = (page - 1) * pageSize;
+            const fields = req.query.fields ? (req.query.fields as string).split(',') : null;
 
-            const [books, total] = await booksRepository.findAndCount({
-                take: pageSize,
-                skip: offset
-            });
+            const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, BookDetails);
+
+            // Validate requested fields
+            let selectFields = ['BookDetails'];
+            if (fields && fields.length > 0) {
+                const invalidFields = fields.filter(field => !BookDetails.validSortColumn.includes(field.trim()));
+                if (invalidFields.length > 0) {
+                    res.status(400).json({ message: `Invalid fields: ${invalidFields.join(', ')}` });
+                    return;
+                }
+                selectFields = fields.map(field => `BookDetails.${field.trim()}`);
+            }
+
+            const [books, total] = await booksRepository.createQueryBuilder('BookDetails')
+                .select(selectFields)
+                .orderBy(`BookDetails.${sort}`, order.toUpperCase() as 'ASC' | 'DESC')
+                .take(pageSize)
+                .skip(offset)
+                .getManyAndCount();
 
             if (books.length === 0) {
-                res.status(404).json({message: "out of bounds"});
+                res.status(404).json({ message: "out of bounds" });
                 return;
             }
 
-            res.status(200).json({ message: "fetch success", data: books, total, page, pageSize });
+            res.status(200).json({ message: "fetch success", data: books, total, page, pageSize, warnings });
         } catch (error: any) {
             res.status(500).json({ message: "failed to fetch books", error: error.message });
         }
@@ -33,73 +51,65 @@ class BooksController {
     async add(req: Request, res: Response): Promise<void> { // NOTE: Chưa test, chưa có data mẫu
         if (!checkReqUser(req, res)) return;
 
-        if (
-            !req.body.title ||
-            !req.body.price ||
-            !req.body.fileUrl ||
-            !req.body.publisherId ||
-            !req.body.description || req.body.description.length < 20 ||
-            !req.body.pageCount ||
-            !req.body.authorsID ||
-            !req.body.coverUrl
-        ) {
-            res.status(400).send("invalid request");
-            return;
-        }
-
-        if (!req.body.status) {
-            req.body.status = 3;
-        }
-
-        if (!req.body.publishDate) {
-            const currentDate = new Date();
-            const formattedDate = currentDate.toISOString().split('T')[0];
-            req.body.publishDate = formattedDate;
-        } else {
-            req.body.publishDate = (req.body.publishDate as Date).toISOString().split('T')[0];
-        }
-        
-
-        const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
-        const publisher = await publisherRepository.findOne({ where: { id: req.body.publisherId } });
-
-        if (!publisher) {
-            res.status(404).json({ message: "Publisher not found" });
-            return;
-        }
-
-        const AuthorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
-        const author = await AuthorRepository.findOne({ where: { id: req.body.authorsID } });
-
-        if (!author) {
-            res.status(404).json({ message: "Author not found" });
-            return;
-        }
-
         try {
-            const booksRepository = (await AppDataSource.getInstace()).getRepository(Books);
-            const book = await booksRepository.findOne({ where: { title: req.body.title } });
-            if (book != null) {
-                res.status(400).json({message: "Book title exists", data: book});
+            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
+            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+
+            const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryId } = req.body;
+
+            // Validate required fields
+            if (!title || !description || !pageCount || !price || !fileUrl || !authorsId || !publisherId || !publishDate || !categoryId) {
+                res.status(400).json({ message: "Title, Description, PageCount, Price, FileUrl, AuthorsID, PublisherID, PublishDate, and CategoryID are required." });
                 return;
             }
 
-            let newBook = new Books();
-            newBook.title = req.body.title;
-            newBook.price = req.body.price;
-            newBook.fileUrl = req.body.fileUrl;
-            newBook.publisherId = req.body.publisherId;
-            newBook.publishDate = req.body.publishDate;
-            newBook.status = req.body.status;
-            newBook.authorsId = req.body.authorsID;
-            newBook.coverUrl = req.body.coverUrl;
+            // Check for existing book with the same title, authorsId, and publisherId
+            const existingBook = await bookRepository.findOne({ where: { title, authorsId, publisherId } });
+            if (existingBook) {
+                res.status(409).json({ message: "A book with the same title, author, and publisher already exists." });
+                return;
+            }
 
-            const toDatabase = booksRepository.create(newBook);
-            const savedBook = await booksRepository.save(toDatabase);
+            // Ensure the provided author and publisher exist
+            const author = await authorRepository.findOne({ where: { id: authorsId } });
+            if (!author) {
+                res.status(404).json({ message: "Author not found." });
+                return;
+            }
 
-            res.status(201).json({message: "Book add success", data: savedBook});
+            const publisher = await publisherRepository.findOne({ where: { id: publisherId } });
+            if (!publisher) {
+                res.status(404).json({ message: "Publisher not found." });
+                return;
+            }
+
+            const category = await categoryRepository.findOne({ where: { id: categoryId } });
+            if (!category) {
+                res.status(404).json({ message: "Category not found." });
+                return;
+            }
+
+            const newBook = new Books();
+            newBook.title = title;
+            newBook.description = description;
+            newBook.pageCount = pageCount;
+            newBook.price = price;
+            newBook.fileUrl = fileUrl;
+            newBook.coverUrl = coverUrl || null;
+            newBook.status = status;
+            newBook.authorsId = authorsId;
+            newBook.publisherId = publisherId;
+            newBook.publishDate = (new Date(publishDate)).toISOString().split('T')[0];
+            newBook.isRecommended = isRecommended || 0;
+            newBook.categories = [category];
+
+            const savedBook = await bookRepository.save(newBook);
+
+            res.status(201).json({ message: "Book added successfully", book: savedBook });
         } catch (error: any) {
-            res.status(500).json({ message: "failed to add books", error: error.message });
+            res.status(500).json({ message: "Failed to add book", error: error.message });
         }
     }
 

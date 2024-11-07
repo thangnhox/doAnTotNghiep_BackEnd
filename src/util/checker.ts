@@ -34,7 +34,7 @@ export function sortValidator(sort: string, order: string, entity: any, {default
 
     if (sort && !entity.validSortColumn.includes(sort)) {
         status += 1;
-        warnings.push(`Invalid sort query: '${sort}'. Defaulting to 'id'.`);
+        warnings.push(`Invalid sort query: '${sort}'. Defaulting to '${defaultSort}'.`);
     }
     if (order && !orderChecker(order)) {
         status += 2;
