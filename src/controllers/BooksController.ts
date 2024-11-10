@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../models/repository/Datasource';
 import { Books } from '../models/entities/Books';
 import { Publisher } from '../models/entities/Publisher';
-import { checkReqUser, sortValidator } from '../util/checker';
+import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/checker';
 import { Authors } from '../models/entities/Authors';
 import { BookDetails } from '../models/views/BookDetails';
 import { Category } from '../models/entities/Category';
@@ -12,9 +12,7 @@ class BooksController {
         try {
             const booksRepository = (await AppDataSource.getInstace()).getRepository(BookDetails);
 
-            const page = parseInt(req.query.page as string, 10) || 1;
-            const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
-            const offset = (page - 1) * pageSize;
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
             const fields = req.query.fields ? (req.query.fields as string).split(',') : null;
 
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, BookDetails);

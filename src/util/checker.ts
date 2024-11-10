@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { ParsedQs } from 'qs';
 
 export function checkReqUser(req: Request, res: Response, admin: number = 1): boolean {
     if (req.user === undefined) {
@@ -24,7 +25,7 @@ interface defaultSorter {
     defaultOrder?: OrderType;
 }
 
-export function sortValidator(sort: string, order: string, entity: any, {defaultSort = 'null', defaultOrder = 'asc'}: defaultSorter = {}) {
+export function sortValidator(sort: string, order: string, entity: any, { defaultSort = 'null', defaultOrder = 'asc' }: defaultSorter = {}) {
     let status = 0;
     let warnings: string[] = [];
 
@@ -44,7 +45,15 @@ export function sortValidator(sort: string, order: string, entity: any, {default
     return {
         status,
         sort: (!(status & 1) && sort) ? sort : defaultSort,
-        order:  (!(status & 2) && order) ? order : defaultOrder,
+        order: (!(status & 2) && order) ? order : defaultOrder,
         warnings: warnings.length > 0 ? warnings : undefined
     }
 }
+
+export function getValidatedPageInfo(query: ParsedQs): { page: number, pageSize: number, offset: number } {
+    const page = Math.max(parseInt(query.page as string, 10), 1) || 1;
+    const pageSize = Math.max(parseInt(query.pageSize as string, 10), 1) || 10;
+    const offset = (page - 1) * pageSize;
+    return { page, pageSize, offset };
+}
+

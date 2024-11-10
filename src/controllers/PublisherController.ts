@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Publisher } from '../models/entities/Publisher';
-import { checkReqUser, sortValidator } from '../util/checker';
+import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/checker';
 import { AppDataSource } from '../models/repository/Datasource';
 
 class PublisherController {
@@ -8,9 +8,7 @@ class PublisherController {
         try {
             const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
 
-            const page = parseInt(req.query.page as string, 10) || 1;
-            const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
-            const offset = (page - 1) * pageSize;
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
 
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Publisher);
 
