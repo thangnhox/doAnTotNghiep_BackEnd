@@ -132,9 +132,7 @@ class PublisherController {
                 }
 
             } else {
-                const page = parseInt(req.query.page as string, 10) || 1;
-                const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
-                const offset = (page - 1) * pageSize;
+                const { page, pageSize, offset } = getValidatedPageInfo(req.query);
 
                 const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Publisher);
 
