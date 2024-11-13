@@ -70,7 +70,7 @@ class AuthorsController {
 
             const { name, birthDate, description, nationality } = req.body;
 
-            if (!name || !description || birthDate) {
+            if (!name || !description || !birthDate) {
                 res.status(400).json({ message: "Name and Description are required." });
                 return;
             }
