@@ -23,7 +23,7 @@ class AdminController {
                 res.status(401).send("access denied");
             } else {
                 const token = makeAuthenticationToken(userData.id, userData.email);
-                res.status(200).json({ message: "authentication confirmed", token });
+                res.status(200).json({ message: "authentication confirmed", data: token });
             }
         } catch (error: any) {
             res.status(500).json({ message: "Authentication server error" });
@@ -55,7 +55,7 @@ class AdminController {
 
             const newToken = makeAuthenticationToken(savedChanged.id, savedChanged.email);
 
-            res.status(200).json({message: "change password success", data: savedChanged, token: newToken});
+            res.status(200).json({message: "change password success", data: { savedChanged, newToken }});
         } catch (error: any) {
             res.status(500).json({ message: "Database server error", error });
         }

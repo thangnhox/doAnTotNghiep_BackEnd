@@ -55,18 +55,18 @@ class BooksController {
             const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
             const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
 
-            const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryId } = req.body;
+            const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds } = req.body;
 
             // Validate required fields
-            if (!title || !description || !pageCount || !price || !fileUrl || !authorsId || !publisherId || !publishDate || !categoryId) {
+            if (!title || !description || !pageCount || !price || !fileUrl || !authorsId || !publisherId || !publishDate || !categoryIds) {
                 res.status(400).json({ message: "Title, Description, PageCount, Price, FileUrl, AuthorsID, PublisherID, PublishDate, and CategoryID are required." });
                 return;
             }
 
             // Check for existing book with the same title, authorsId, and publisherId
-            const existingBook = await bookRepository.findOne({ where: { title, authorsId, publisherId } });
+            const existingBook = await bookRepository.findOne({ where: { title, authorsId, publisherId }, relations: ['categories'] });
             if (existingBook) {
-                res.status(409).json({ message: "A book with the same title, author, and publisher already exists." });
+                res.status(409).json({ message: "A book with the same title, author, and publisher already exists.", data: existingBook });
                 return;
             }
 
@@ -83,11 +83,15 @@ class BooksController {
                 return;
             }
 
-            const category = await categoryRepository.findOne({ where: { id: categoryId } });
-            if (!category) {
-                res.status(404).json({ message: "Category not found." });
-                return;
+            const categories: Category[] = [];
+            for (const categoryId of categoryIds) {
+                const category = await categoryRepository.findOne({ where: { id: categoryId } });
+                if (category) {
+                    categories.push(category);
+                }
             }
+
+            const byteStatus = status & 0xFF; 
 
             const newBook = new Books();
             newBook.title = title;
@@ -96,16 +100,16 @@ class BooksController {
             newBook.price = price;
             newBook.fileUrl = fileUrl;
             newBook.coverUrl = coverUrl || null;
-            newBook.status = status;
+            newBook.status = byteStatus;
             newBook.authorsId = authorsId;
             newBook.publisherId = publisherId;
             newBook.publishDate = (new Date(publishDate)).toISOString().split('T')[0];
             newBook.isRecommended = isRecommended || 0;
-            newBook.categories = [category];
+            newBook.categories = categories;
 
             const savedBook = await bookRepository.save(newBook);
 
-            res.status(201).json({ message: "Book added successfully", book: savedBook });
+            res.status(201).json({ message: "Book added successfully", data: savedBook });
         } catch (error: any) {
             res.status(500).json({ message: "Failed to add book", error: error.message });
         }

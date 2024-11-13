@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Category } from '../models/entities/Category';
 import { AppDataSource } from '../models/repository/Datasource';
-import { getValidatedPageInfo, sortValidator } from '../util/checker';
+import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/checker';
 
 class CategoryController {
     async all(req: Request, res: Response): Promise<void> {
@@ -183,6 +183,35 @@ class CategoryController {
             }
         } catch (error: any) {
             res.status(500).json({ message: "Failed to fetch category", error: error.message });
+        }
+    }
+
+    async add(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        if (!req.body.categoryName) {
+            res.status(400).send("invalid request");
+            return;
+        }
+
+        const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+        const category = await categoryRepository.findOne({ where: { name: req.body.categoryName } });
+
+        if (category !== null) {
+            res.status(409).json({ message: "category already exist", data: category });
+            return;
+        }
+
+        let newcategory = new Category();
+        newcategory.name = req.body.categoryName;
+        const toDatabase = categoryRepository.create(newcategory);
+
+        try {
+            const savedcategory = await categoryRepository.save(toDatabase);
+
+            res.status(201).json({ message: "Add category success", data: savedcategory });
+        } catch (error: any) {
+            res.status(500).json({ message: "Failed to add category", error: error });
         }
     }
 }

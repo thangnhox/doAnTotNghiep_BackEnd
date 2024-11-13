@@ -89,7 +89,7 @@ class AuthorsController {
 
             const saved = await authorRepository.save(newAuthor);
 
-            res.status(201).json({ message: "Author added successfully", author: saved });
+            res.status(201).json({ message: "Author added successfully", data: saved });
         } catch (error: any) {
             res.status(500).json({ message: "Failed to add author", error: error.message });
         }

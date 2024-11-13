@@ -25,7 +25,7 @@ class UserController {
                 res.status(401).send("access denied");
             } else {
                 const token = makeAuthenticationToken(userData.id, userData.email);
-                res.status(200).json({ message: "authentication confirmed", token });
+                res.status(200).json({ message: "authentication confirmed", data: token });
             }
         } catch (error: any) {
             res.status(500).json({ message: "Authentication server error" });
@@ -72,7 +72,7 @@ class UserController {
 
             const newUserToken = makeValidationToken(newUser);
             // TODO: gửi mail chứa url có token
-            res.status(201).json({ message: "create user success", token: newUserToken });
+            res.status(201).json({ message: "create user success", data: newUserToken });
 
             await (await AppDataSource.getInstace()).destroy();
         } catch (error: any) {
@@ -104,7 +104,7 @@ class UserController {
 
             // TODO: make use of this token
 
-            res.status(201).json({ message: "User validated", token: newUserToken });
+            res.status(201).json({ message: "User validated", data: newUserToken });
             await (await AppDataSource.getInstace()).destroy();
         } catch (err: any) {
             res.status(400).json({ message: "invalid request" });
