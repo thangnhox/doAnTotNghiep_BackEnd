@@ -15,6 +15,7 @@ import books from './routes/books';
 import publisher from './routes/publisher';
 import { AppDataSource } from './models/repository/Datasource';
 import authors from './routes/authors';
+import PDFCache from './services/pdfcacher';
 
 const app = express();
 const port = 3000;
@@ -34,6 +35,7 @@ app.use('/', index);
 
 const server = app.listen(port, async () => {
   console.log(`Server running on http://localhost:${port}`);
+  PDFCache.setup(524288000, './.cache');
   await AppDataSource.getInstace();
 });
 

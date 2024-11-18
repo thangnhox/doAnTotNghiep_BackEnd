@@ -57,3 +57,10 @@ export function getValidatedPageInfo(query: ParsedQs): { page: number, pageSize:
     return { page, pageSize, offset };
 }
 
+export function getValidateBookPage(query: ParsedQs): { page: number, width: number, height: number, density: number } {
+    const page = Math.max(parseInt(query.page as string, 10), 1) || 1;
+    const width = Math.max(parseInt(query.width as string, 10), 1) || 600;
+    const height = Math.max(parseInt(query.height as string, 10), 1) || 600;
+    const density = Math.max(parseInt(query.density as string, 10), 1) || 100;
+    return { page, width, height, density };
+}

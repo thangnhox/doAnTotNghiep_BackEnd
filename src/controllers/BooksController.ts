@@ -2,14 +2,19 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../models/repository/Datasource';
 import { Books } from '../models/entities/Books';
 import { Publisher } from '../models/entities/Publisher';
-import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/checker';
+import { checkReqUser, getValidateBookPage, getValidatedPageInfo, sortValidator } from '../util/checker';
 import { Authors } from '../models/entities/Authors';
 import { BookDetails } from '../models/views/BookDetails';
 import { Category } from '../models/entities/Category';
+import { validateTokenJWT } from '../services/authentication';
+import PDFCache from '../services/pdfcacher';
+import { convertPdfPageToImage } from '../util/pdf2img';
+import fs from 'fs';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
         try {
+            const tokenValidation = await validateTokenJWT(req);
             const booksRepository = (await AppDataSource.getInstace()).getRepository(BookDetails);
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
@@ -18,14 +23,23 @@ class BooksController {
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, BookDetails);
 
             // Validate requested fields
-            let selectFields = ['BookDetails'];
+            let selectFields = [];
             if (fields && fields.length > 0) {
-                const invalidFields = fields.filter(field => !BookDetails.validSortColumn.includes(field.trim()));
+                let validFields = fields.filter(field => BookDetails.validSortColumn.includes(field.trim()));
+                if (!tokenValidation.valid) {
+                    validFields = validFields.filter(field => field.trim() !== 'file_url'); // Exclude 'file_url' if token is invalid
+                }
+                const invalidFields = fields.filter(field => !validFields.includes(field.trim()));
                 if (invalidFields.length > 0) {
                     res.status(400).json({ message: `Invalid fields: ${invalidFields.join(', ')}` });
                     return;
                 }
-                selectFields = fields.map(field => `BookDetails.${field.trim()}`);
+                selectFields = validFields.map(field => `BookDetails.${field.trim()}`);
+            } else {
+                selectFields = BookDetails.validSortColumn.map(field => `BookDetails.${field}`);
+                if (!tokenValidation.valid) {
+                    selectFields = selectFields.filter(field => field !== 'BookDetails.file_url');
+                }
             }
 
             const [books, total] = await booksRepository.createQueryBuilder('BookDetails')
@@ -91,7 +105,7 @@ class BooksController {
                 }
             }
 
-            const byteStatus = status & 0xFF; 
+            const byteStatus = status & 0xFF;
 
             const newBook = new Books();
             newBook.title = title;
@@ -112,6 +126,104 @@ class BooksController {
             res.status(201).json({ message: "Book added successfully", data: savedBook });
         } catch (error: any) {
             res.status(500).json({ message: "Failed to add book", error: error.message });
+        }
+    }
+
+    async fetch(req: Request, res: Response): Promise<void> {
+        try {
+            const tokenValidation = await validateTokenJWT(req);
+            const booksRepository = (await AppDataSource.getInstace()).getRepository(BookDetails);
+
+            const bookId = req.params.id;
+            const fields = req.query.fields ? (req.query.fields as string).split(',') : null;
+
+            // Validate requested fields
+            let selectFields = [];
+            if (fields && fields.length > 0) {
+                let validFields = fields.filter(field => BookDetails.validSortColumn.includes(field.trim()));
+                if (!tokenValidation.valid) {
+                    validFields = validFields.filter(field => field.trim() !== 'file_url'); // Exclude 'file_url' if token is invalid
+                }
+                const invalidFields = fields.filter(field => !validFields.includes(field.trim()));
+                if (invalidFields.length > 0) {
+                    res.status(400).json({ message: `Invalid fields: ${invalidFields.join(', ')}` });
+                    return;
+                }
+                selectFields = validFields.map(field => `BookDetails.${field.trim()}`);
+            } else {
+                selectFields = BookDetails.validSortColumn.map(field => `BookDetails.${field}`);
+                if (!tokenValidation.valid) {
+                    selectFields = selectFields.filter(field => field !== 'BookDetails.file_url');
+                }
+            }
+
+            const book = await booksRepository.createQueryBuilder('BookDetails')
+                .select(selectFields)
+                .where('BookDetails.BookID = :id', { id: bookId })
+                .getOne();
+
+            if (!book) {
+                res.status(404).json({ message: "Book not found" });
+                return;
+            }
+
+            res.status(200).json({ message: "fetch success", data: book });
+        } catch (error: any) {
+            res.status(500).json({ message: "failed to fetch book", error: error.message });
+        }
+    }
+
+    async read(req: Request, res: Response): Promise<void> {
+        const { id } = req.params;
+
+        const { page, width, height, density } = getValidateBookPage(req.query);
+
+        if (!id) {
+            res.status(400).json({ message: 'Missing id parameter' });
+            return;
+        }
+
+        if (width < 600 || height < 600 || density < 100) {
+            res.status(600).json({ message: "size is too small (min 600 width and 600 height and 100 density)" });
+            return;
+        }
+
+        try {
+            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const book = await bookRepository.findOne({ where: { id: Number(id) } });
+
+            if (!book) {
+                res.status(404).json({ message: 'Book not found' });
+                return;
+            }
+
+            if (page > book.pageCount) {
+                res.status(400).json({ message: "Out of bound" });
+                return;
+            }
+
+            const pdfCache = PDFCache.getInstance();
+            const pdfPath = await pdfCache.loadAndCachePDF(book.fileUrl, book.id);
+
+            const image = await convertPdfPageToImage(pdfPath, page, `${PDFCache.getCacheDir()}/${id}.d/`, { width, height, density });
+
+            if (image === null) {
+                res.status(500).json({ message: "Failed to read book" });
+                return;
+            }
+
+            if (image.path === null) {
+                res.status(500).json({ message: "Failed to prepare page" });
+                return;
+            }
+
+            res.setHeader('Content-Type', 'image/png');
+
+            fs.createReadStream(image.path as string).pipe(res);
+
+        } catch (error: any) {
+            console.error(error);
+            res.status(500).json({ message: 'Error reading PDF file', error: error.message });
         }
     }
 

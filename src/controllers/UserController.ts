@@ -72,7 +72,11 @@ class UserController {
 
             const newUserToken = makeValidationToken(newUser);
             // TODO: gửi mail chứa url có token
-            res.status(201).json({ message: "create user success", data: newUserToken });
+            res.status(201).json({ message: "create user success", data: newUserToken }); // => http//fron-ent.com/verify/:newUserToken
+
+            // get http://back-end.com/varify/:newUserToken
+
+            // redirect ....
 
             await (await AppDataSource.getInstace()).destroy();
         } catch (error: any) {
