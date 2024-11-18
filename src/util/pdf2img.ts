@@ -10,11 +10,13 @@ interface imageSize {
 export async function convertPdfPageToImage(pdfPath: string, pageNumber: number, output: string, { width = 600, height = 600, density = 100 }: imageSize = {}): Promise<WriteImageResponse | null> {
     const options = {
         density: density,
-        saveFilename: output,
+        saveFilename: `${width}.${height}.${density}.${pageNumber}`,
+        savePath: output,
         format: 'png',
         width: width,
         height: height,
     };
+
     const convert = fromPath(pdfPath, options);
     const pageToConvertAsImage = pageNumber;
 
