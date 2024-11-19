@@ -16,6 +16,8 @@ import publisher from './routes/publisher';
 import { AppDataSource } from './models/repository/Datasource';
 import authors from './routes/authors';
 import PDFCache from './services/pdfcacher';
+import orders from './routes/orders';
+import membership from './routes/membership';
 
 const app = express();
 const port = 3000;
@@ -31,6 +33,8 @@ app.use('/admin', admin);
 app.use('/books', books);
 app.use('/publisher', publisher);
 app.use('/authors', authors);
+app.use('/order', orders);
+app.use('/membership', membership);
 app.use('/', index);
 
 const server = app.listen(port, async () => {

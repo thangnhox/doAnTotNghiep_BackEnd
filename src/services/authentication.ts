@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/entities/User';
 import UserController from '../controllers/UserController';
+import MembershipController from '../controllers/MembershipController';
 
 const secretKey = process.env.TOKEN_KEY as string;
 
@@ -31,12 +32,13 @@ export const authenticateJWT = async (req: Request, res: Response, next: NextFun
 interface validToken {
     valid: boolean;
     message: string | null;
+    code: number;
 }
 
 export const validateTokenJWT = async (req: Request): Promise<validToken> => {
     const token = req.header('Authorization')?.split(' ')[1];
     if (!token) {
-        return { valid: false, message: "No token" };
+        return { valid: false, message: "No token", code: -1 };
     }
     try {
         const decoded = jwt.verify(token, secretKey) as { userID: number, email: string };
@@ -44,14 +46,18 @@ export const validateTokenJWT = async (req: Request): Promise<validToken> => {
         const user = await UserController.getUser(decoded.userID);
 
         if (user === null) {
-            return { valid: false, message: "User no longer exists" };
+            return { valid: false, message: "User no longer exists", code: -2 };
         }
         req.user = user;
 
-        return { valid: true, message: null };
+        const isMemberShip = await MembershipController.isValidUser(user);
+        
+        if (!isMemberShip) return { valid: false, message: "Not a membership", code: 1 };
+
+        return { valid: true, message: null, code: 200 };
 
     } catch (err) {
-        return { valid: false, message: "Invalid Token" };
+        return { valid: false, message: "Invalid Token", code: -255 };
     }
 }
 
