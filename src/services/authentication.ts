@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/entities/User';
 import UserController from '../controllers/UserController';
 import MembershipController from '../controllers/MembershipController';
+import { decrypt, encrypt } from '../util/crypto';
 
 const secretKey = process.env.TOKEN_KEY as string;
 
@@ -13,9 +14,9 @@ export const authenticateJWT = async (req: Request, res: Response, next: NextFun
         return;
     }
     try {
-        const decoded = jwt.verify(token, secretKey) as { userID: number, email: string };
-        req.token = decoded;
-        const user = await UserController.getUser(decoded.userID);
+        const enc_token = jwt.verify(token, secretKey) as { enc_token: string };
+        req.token = decrypt(enc_token.enc_token) as { userID: number, email: string };
+        const user = await UserController.getUser(req.token.userID);
 
         if (user === null) {
             res.status(404).send('User no longer exist');
@@ -41,9 +42,9 @@ export const validateTokenJWT = async (req: Request): Promise<validToken> => {
         return { valid: false, message: "No token", code: -1 };
     }
     try {
-        const decoded = jwt.verify(token, secretKey) as { userID: number, email: string };
-        req.token = decoded;
-        const user = await UserController.getUser(decoded.userID);
+        const enc_token = jwt.verify(token, secretKey) as { enc_token: string };
+        req.token = decrypt(enc_token.enc_token) as { userID: number, email: string };
+        const user = await UserController.getUser(req.token.userID);
 
         if (user === null) {
             return { valid: false, message: "User no longer exists", code: -2 };
@@ -62,18 +63,22 @@ export const validateTokenJWT = async (req: Request): Promise<validToken> => {
 }
 
 export const makeAuthenticationToken = (userID: number, email: string) => {
-    return jwt.sign({
+    const enc_token = encrypt({
         userID: userID,
         email: email,
-    }, secretKey, { expiresIn: '1d' });
+    });
+
+    return jwt.sign({ enc_token }, secretKey, { expiresIn: '1d' });
 }
 
 export const makeValidationToken = (user: User) => {
-    return jwt.sign({
+    const enc_token = encrypt({
         userEmail: user.email,
         userName: user.name,
         userPassword: user.password,
         userBirthYear: user.birthYear,
         userAvatar: user.avatar
-    }, secretKey, { expiresIn: '1h' });
+    });
+
+    return jwt.sign({ enc_token }, secretKey, { expiresIn: '1h' });
 }

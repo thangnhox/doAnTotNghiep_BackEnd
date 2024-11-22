@@ -4,6 +4,7 @@ import { makeAuthenticationToken, makeValidationToken } from '../services/authen
 import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../models/repository/Datasource';
 import { sendVerificationEmail } from '../services/email';
+import { decrypt } from '../util/crypto';
 
 class UserController {
     async login(req: Request, res: Response): Promise<void> {
@@ -32,7 +33,7 @@ class UserController {
             res.status(500).json({ message: "Authentication server error" });
         }
     }
-    
+
 
     async createUser(req: Request, res: Response): Promise<void> {
         const user: User = req.body;
@@ -53,7 +54,7 @@ class UserController {
             newUser.avatar = req.body.avatar;
         }
 
-        
+
 
         try {
             const userRepository = (await AppDataSource.getInstace()).getRepository(User);
@@ -99,7 +100,9 @@ class UserController {
         const secretKey = process.env.TOKEN_KEY as string;
 
         try {
-            const decoded = jwt.verify(validateToken, secretKey) as { userEmail: string, userName: string, userPassword: string, userAvatar: string | null, userBirthYear: number };
+            const enc_token = jwt.verify(validateToken, secretKey) as { enc_token: string };
+
+            const decoded = decrypt(enc_token.enc_token) as { userEmail: string, userName: string, userPassword: string, userAvatar: string | null, userBirthYear: number };
 
             const user: User = new User();
             user.email = decoded.userEmail;
@@ -111,19 +114,20 @@ class UserController {
             const userRepository = (await AppDataSource.getInstace()).getRepository(User);
 
             const verified = await userRepository.findOne({ where: { email: user.email } });
-            if (verified) {
-                res.status(400).json({ message: "User already verified" });
-                return;
+            let token: string = "";
+
+            if (!verified) {
+                const toDatabase = userRepository.create(user);
+                const savedUser = await userRepository.save(toDatabase);
+
+                token = makeAuthenticationToken(savedUser.id, savedUser.email);
+            } else {
+                token = makeAuthenticationToken(verified.id, verified.email);
             }
-
-            const toDatabase = userRepository.create(user);
-            const savedUser = await userRepository.save(toDatabase);
-
-            const newUserToken = makeAuthenticationToken(savedUser.id, savedUser.email);
 
             // TODO: make use of this token
 
-            res.status(201).json({ message: "User validated", data: newUserToken });
+            res.status(201).json({ message: "User validated", data: token });
         } catch (err: any) {
             res.status(400).json({ message: "invalid request" });
         }
