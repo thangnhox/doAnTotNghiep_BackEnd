@@ -3,6 +3,7 @@ import { User } from '../models/entities/User';
 import { makeAuthenticationToken, makeValidationToken } from '../services/authentication';
 import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../models/repository/Datasource';
+import { sendVerificationEmail } from '../services/email';
 
 class UserController {
     async login(req: Request, res: Response): Promise<void> {
@@ -72,13 +73,21 @@ class UserController {
 
             const newUserToken = makeValidationToken(newUser);
             // TODO: gửi mail chứa url có token
-            res.status(201).json({ message: "create user success", data: newUserToken }); // => http//fron-ent.com/verify/:newUserToken
+            // res.status(201).json({ message: "create user success", data: newUserToken }); // => http//fron-ent.com/verify/:newUserToken
 
             // get http://back-end.com/varify/:newUserToken
 
             // redirect ....
 
-            await (await AppDataSource.getInstace()).destroy();
+            const sendEmail = await sendVerificationEmail(newUser.email, newUserToken);
+
+            if (sendEmail.code !== 1) {
+                res.status(500).json({ message: `Error when sending email ${sendEmail.message}` });
+                return;
+            }
+
+            res.status(200).send();
+
         } catch (error: any) {
             res.status(500).json({ message: "Authentication server error" });
         }
@@ -101,6 +110,12 @@ class UserController {
 
             const userRepository = (await AppDataSource.getInstace()).getRepository(User);
 
+            const verified = await userRepository.findOne({ where: { email: user.email } });
+            if (verified) {
+                res.status(400).json({ message: "User already verified" });
+                return;
+            }
+
             const toDatabase = userRepository.create(user);
             const savedUser = await userRepository.save(toDatabase);
 
@@ -109,7 +124,6 @@ class UserController {
             // TODO: make use of this token
 
             res.status(201).json({ message: "User validated", data: newUserToken });
-            await (await AppDataSource.getInstace()).destroy();
         } catch (err: any) {
             res.status(400).json({ message: "invalid request" });
         }
