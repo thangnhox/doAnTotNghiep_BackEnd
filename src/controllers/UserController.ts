@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../models/repository/Datasource';
 import { sendVerificationEmail } from '../services/email';
 import { decrypt } from '../util/crypto';
+import { auth, GoogleAuthProvider, signInWithCredential } from '../services/firebase';
+import { v4 as uuidv4 } from 'uuid';
 
 class UserController {
     async login(req: Request, res: Response): Promise<void> {
@@ -132,6 +134,54 @@ class UserController {
             res.status(400).json({ message: "invalid request" });
         }
 
+    }
+
+
+    async googleLogin(req: Request, res: Response): Promise<void> {
+        const { idToken } = req.body;
+
+        if (!idToken) {
+            res.status(400).json({ message: "Invalid request" });
+        }
+
+        try {
+            const credential = GoogleAuthProvider.credential(idToken);
+            const userCredential = await signInWithCredential(auth, credential);
+            const userData = userCredential.user;
+
+            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            let token: string = "";
+
+            if (!userData.email ||
+                !userData.displayName ||
+                !userData.photoURL
+            ) {
+                res.status(400).json({ message: "Invalid token" });
+                return;
+            }
+
+            const existsUser = await userRepository.findOne({ where: { email: userData.email } });
+            if (!existsUser) {
+                const user: User = new User();
+                user.email = userData.email;
+                user.name = userData.displayName;
+                user.password = uuidv4(); // Random password
+                user.avatar = userData.photoURL;
+                user.birthYear = 2000;
+
+                const toDatabase = userRepository.create(user);
+                const savedUser = await userRepository.save(toDatabase);
+
+                token = makeAuthenticationToken(savedUser.id, savedUser.email);
+            } else {
+                token = makeAuthenticationToken(existsUser.id, existsUser.email);
+            }
+
+            res.status(200).json({ message: "authentication confirmed", data: token });
+
+        } catch (error: any) {
+            res.status(500).json({ message: 'Server error' });
+        }
     }
 
 
