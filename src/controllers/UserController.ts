@@ -184,6 +184,24 @@ class UserController {
         }
     }
 
+    async info(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Failed to fetch user data" });
+            return;
+        }
+
+        res.status(200).json({ 
+            message: "User info",
+            data: { 
+                id: req.user.id,
+                email: req.user.email,
+                name: req.user.name,
+                avatar: req.user.avatar,
+                birthYear: req.user.birthYear
+            }
+        })
+    }
+
 
     async getUser(id: number): Promise<User | null> {
 

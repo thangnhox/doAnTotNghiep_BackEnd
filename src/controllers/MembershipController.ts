@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { User } from '../models/entities/User';
 import { AppDataSource } from '../models/repository/Datasource';
 import { MembershipRecord } from '../models/entities/MembershipRecord';
+import { checkReqUser } from '../util/checker';
+import { Membership } from '../models/entities/Membership';
 
 class MembershipController {
     async isValidUser(user: User): Promise<boolean> {
@@ -35,6 +37,85 @@ class MembershipController {
 
         } catch (error: any) {
             res.status(500).json({ message: "Failed to fetch subcribe data." });
+        }
+    }
+
+    // Insert new membership
+    async insertMembership(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        const { name, rank, price, allowNew } = req.body;
+
+        try {
+            const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
+
+            // Check if a membership with the same name exists
+            const existingMembership = await membershipRepository.findOne({ where: { name } });
+            if (existingMembership) {
+                res.status(409).json({ message: 'Membership name already exists', data: existingMembership });
+                return;
+            }
+
+            const newMembership = membershipRepository.create({ name, rank, price, allowNew });
+            const insertedMembership = await membershipRepository.save(newMembership);
+
+            res.status(201).json({ message: "Insert success", data: insertedMembership });
+        } catch (error) {
+            console.error('Error inserting membership:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    // Edit an existing membership
+    async editMembership(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        const { id } = req.params;
+        const { rank, price, allowNew } = req.body;
+
+        try {
+            const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
+            const membership = await membershipRepository.findOne({ where: { id: Number(id) } });
+
+            if (!membership) {
+                res.status(404).json({ message: 'Membership not found' });
+                return;
+            }
+
+            membership.rank = rank !== undefined ? rank : membership.rank;
+            membership.price = price !== undefined ? price : membership.price;
+            membership.allowNew = allowNew != undefined ? allowNew : membership.allowNew;
+
+            const updatedMembership = await membershipRepository.save(membership);
+            res.status(200).json({ message: "Update success", data: updatedMembership });
+        } catch (error) {
+            console.error('Error editing membership:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    // Hide a membership (soft delete)
+    async hideMembership(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        const { id } = req.params;
+
+        try {
+            const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
+            const membership = await membershipRepository.findOne({ where: { id: Number(id) } });
+
+            if (!membership) {
+                res.status(404).json({ message: 'Membership not found' });
+                return;
+            }
+
+            membership.allowNew = 0; // Assuming 0 means hidden/inactive
+            await membershipRepository.save(membership);
+
+            res.status(200).json({ message: 'Membership hidden successfully' });
+        } catch (error) {
+            console.error('Error hiding membership:', error);
+            res.status(500).json({ message: 'Server error' });
         }
     }
 }

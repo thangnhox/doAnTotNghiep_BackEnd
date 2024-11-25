@@ -18,6 +18,7 @@ import authors from './routes/authors';
 import PDFCache from './services/pdfcacher';
 import orders from './routes/orders';
 import membership from './routes/membership';
+import discount from './routes/discount';
 
 const app = express();
 const port = 3000;
@@ -35,6 +36,7 @@ app.use('/publisher', publisher);
 app.use('/authors', authors);
 app.use('/order', orders);
 app.use('/membership', membership);
+app.use('/discount', discount);
 app.use('/', index);
 
 const server = app.listen(port, async () => {
