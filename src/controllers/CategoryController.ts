@@ -190,7 +190,7 @@ class CategoryController {
         if (!checkReqUser(req, res)) return;
 
         if (!req.body.categoryName) {
-            res.status(400).send("invalid request");
+            res.status(400).json({ message: "Invalid request" });
             return;
         }
 

@@ -10,7 +10,7 @@ const secretKey = process.env.TOKEN_KEY as string;
 export const authenticateJWT = async (req: Request, res: Response, next: NextFunction) => {
     const token = req.header('Authorization')?.split(' ')[1];
     if (!token) {
-        res.status(403).send('Forbidden');
+        res.status(403).json({ message: "Forbidden" });
         return;
     }
     try {
@@ -19,14 +19,14 @@ export const authenticateJWT = async (req: Request, res: Response, next: NextFun
         const user = await UserController.getUser(req.token.userID);
 
         if (user === null) {
-            res.status(404).send('User no longer exist');
+            res.status(404).json({ message: "User no longer exists" });
             return;
         }
         req.user = user;
 
         next();
     } catch (err) {
-        res.status(401).send('Invalid token');
+        res.status(401).json({ message: "Invalid token" });
     }
 };
 

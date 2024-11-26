@@ -8,7 +8,7 @@ class AdminController {
     async login(req: Request, res: Response): Promise<void> {
         const { email, password } = req.body;
         if (!email || !password) {
-            res.status(400).send("invalid request");
+            res.status(400).json({ message: "Invalid request" });
             return;
         }
 
@@ -20,7 +20,7 @@ class AdminController {
                 return;
             }
             if (userData.password !== password || !userData.isAdmin) {
-                res.status(401).send("access denied");
+                res.status(401).json({ message: "Access denied" });
             } else {
                 const token = makeAuthenticationToken(userData.id, userData.email);
                 res.status(200).json({ message: "authentication confirmed", data: token });

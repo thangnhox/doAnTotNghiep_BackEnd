@@ -12,7 +12,7 @@ class UserController {
     async login(req: Request, res: Response): Promise<void> {
         const { email, password } = req.body;
         if (!email || !password) {
-            res.status(400).send("invalid request");
+            res.status(400).json({ message: "Invalid request" });
             return;
         }
 
@@ -26,7 +26,7 @@ class UserController {
             if (userData.password === '') { // Tài khoản loại đăng nhập bằng google
                 res.status(400).json({ message: "Incorrect login info" });
             } else if (userData.password !== password) {
-                res.status(401).send("access denied");
+                res.status(401).json({ message: "access denied" });
             } else {
                 const token = makeAuthenticationToken(userData.id, userData.email);
                 res.status(200).json({ message: "authentication confirmed", data: token });
@@ -46,7 +46,7 @@ class UserController {
             !req.body.birthYear ||
             !req.body.name
         ) {
-            res.status(400).send("invalid request");
+            res.status(400).json({ message: "invalid request" });
             return;
         }
 
@@ -89,7 +89,7 @@ class UserController {
                 return;
             }
 
-            res.status(200).send();
+            res.status(200).json({ message: "Mail sent" });
 
         } catch (error: any) {
             res.status(500).json({ message: "Authentication server error" });

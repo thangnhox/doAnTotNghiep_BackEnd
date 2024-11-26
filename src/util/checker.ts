@@ -7,7 +7,7 @@ export function checkReqUser(req: Request, res: Response, admin: number = 1): bo
         return false;
     }
     if (req.user.isAdmin !== admin) {
-        res.status(403).send('Invalid user');
+        res.status(403).json({ message: "Invalid user" });
         return false;
     }
     return true;
