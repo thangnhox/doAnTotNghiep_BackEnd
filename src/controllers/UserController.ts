@@ -138,36 +138,28 @@ class UserController {
 
 
     async googleLogin(req: Request, res: Response): Promise<void> {
-        const { idToken } = req.body;
+        const { uid, email, displayName, photoURL } = req.body;
 
-        if (!idToken) {
+        if (!uid ||
+            !email ||
+            !displayName ||
+            !photoURL
+        ) {
             res.status(400).json({ message: "Invalid request" });
         }
 
         try {
-            const credential = GoogleAuthProvider.credential(idToken);
-            const userCredential = await signInWithCredential(auth, credential);
-            const userData = userCredential.user;
-
             const userRepository = (await AppDataSource.getInstace()).getRepository(User);
             let token: string = "";
 
-            if (!userData.email ||
-                !userData.displayName ||
-                !userData.photoURL
-            ) {
-                res.status(400).json({ message: "Invalid token" });
-                return;
-            }
-
-            const existsUser = await userRepository.findOne({ where: { email: userData.email } });
+            const existsUser = await userRepository.findOne({ where: { email: email } });
             if (!existsUser) {
                 const user: User = new User();
-                user.email = userData.email;
-                user.name = userData.displayName;
-                user.password = uuidv4(); // Random password
-                user.avatar = userData.photoURL;
-                user.birthYear = 2000;
+                user.email = email;
+                user.name = displayName;
+                user.password = uid;
+                user.avatar = photoURL;
+                user.birthYear = null;
 
                 const toDatabase = userRepository.create(user);
                 const savedUser = await userRepository.save(toDatabase);

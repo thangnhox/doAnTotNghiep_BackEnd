@@ -33,7 +33,7 @@ export class User {
   name!: string;
 
   @Column("int", { name: "BirthYear" })
-  birthYear!: number;
+  birthYear!: number | null;
 
   @Column("varchar", { name: "Avatar", nullable: true, length: 255 })
   avatar!: string | null;
