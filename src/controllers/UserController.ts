@@ -5,8 +5,6 @@ import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../models/repository/Datasource';
 import { sendVerificationEmail } from '../services/email';
 import { decrypt } from '../util/crypto';
-import { auth, GoogleAuthProvider, signInWithCredential } from '../services/firebase';
-import { v4 as uuidv4 } from 'uuid';
 
 class UserController {
     async login(req: Request, res: Response): Promise<void> {

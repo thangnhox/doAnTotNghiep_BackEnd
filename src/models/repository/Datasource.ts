@@ -28,6 +28,8 @@ function createAppDataSource(): DataSource {
         entities: [BookRequest, Books, Category, Discount, Membership, MembershipRecord, Notes, Orders, Publisher, Subscribe, User, Authors, Tags, TagsBooks, BookDetails],
         migrations: [],
         subscribers: [],
+        connectionTimeout: 15000,
+        acquireTimeout: 15000,
     });
 }
 
