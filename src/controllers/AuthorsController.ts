@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../models/repository/Datasource';
 import { Authors } from '../models/entities/Authors';
 import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/checker';
+import { Books } from '../models/entities/Books';
 
 class AuthorsController {
     async all(req: Request, res: Response): Promise<void> {
@@ -189,6 +190,106 @@ class AuthorsController {
             res.status(200).json({ message: "Authors found", data: formattedAuthors, total, page, pageSize, warnings });
         } catch (error: any) {
             res.status(500).json({ message: "Failed to fetch publisher(s)", error: error.message });
+        }
+    }
+
+    async editAuthor(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        const { id } = req.params;
+        const { name, birthDate, description, nationality } = req.body;
+
+        try {
+            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+            const author = await authorRepository.findOne({ where: { id: Number(id) } });
+
+            if (!author) {
+                res.status(404).json({ message: 'Author not found' });
+                return;
+            }
+
+            // Check for duplicates before applying updates
+            const duplicateAuthor = await authorRepository.findOne({
+                where: [
+                    { name, birthDate }
+                ]
+            });
+
+            if (duplicateAuthor && duplicateAuthor.id !== author.id) {
+                res.status(409).json({ message: 'Another author with the same name and birth date already exists' });
+                return;
+            }
+
+            author.name = name !== undefined ? name : author.name;
+            author.birthDate = birthDate !== undefined ? (new Date(birthDate)).toISOString().split('T')[0] : author.birthDate;
+            author.description = description !== undefined ? description : author.description;
+            author.nationality = nationality !== undefined ? nationality : author.nationality;
+
+            await authorRepository.save(author);
+            res.status(200).json({ message: 'Author updated successfully', data: author });
+        } catch (error: any) {
+            res.status(500).json({ message: 'Failed to update author', error: error.message });
+        }
+    }
+
+    async getAuthorInfo(req: Request, res: Response): Promise<void> {
+        const { id } = req.params;
+        
+        try {
+            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+
+            const author = await authorRepository.findOne({ where: { id: Number(id) } });
+
+            if (!author) {
+                res.status(404).json({ message: 'Author not found' });
+                return;
+            }
+
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+            const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Books);
+
+            const [books, totalBooks] = await bookRepository.findAndCount({
+                where: { authors: { id: author.id } },
+                take: pageSize,
+                skip: offset,
+                order: {
+                    [sort]: order.toUpperCase() as 'ASC' | 'DESC'
+                }
+            });
+
+            const formattedBooks = books.map(book => {
+                return {
+                    id: book.id,
+                    title: book.title,
+                    description: book.description,
+                    pageCount: book.pageCount,
+                    price: book.price,
+                    cover: book.coverUrl
+                }
+            });
+
+            res.status(200).json({
+                message: "Author info fetched successfully",
+                data: {
+                    author: {
+                        id: author.id,
+                        name: author.name,
+                        birthDate: author.birthDate,
+                        nationality: author.nationality,
+                        description: author.description,
+                    },
+                    books: {
+                        list: formattedBooks,
+                        totalBooks,
+                        page,
+                        pageSize,
+                        warnings
+                    },
+                },
+            });
+        } catch (error: any) {
+            res.status(500).json({ message: "Failed to fetch author info", error: error.message });
         }
     }
 }

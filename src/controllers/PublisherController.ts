@@ -219,6 +219,46 @@ class PublisherController {
             res.status(500).json({ message: "Failed to fetch publisher", error: error.message });
         }
     }
+
+    async edit(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        const { id } = req.params;
+        const { name } = req.body;
+
+        if (!name) {
+            res.status(400).json({ message: "Invalid request" });
+            return;
+        }
+
+        try {
+            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
+
+            // Find the publisher by ID
+            const publisher = await publisherRepository.findOne({ where: { id: Number(id) } });
+
+            if (!publisher) {
+                res.status(404).json({ message: 'Publisher not found' });
+                return;
+            }
+
+            // Check for duplicate publisher name
+            const existingPublisher = await publisherRepository.findOne({ where: { name } });
+            if (existingPublisher && existingPublisher.id !== publisher.id) {
+                res.status(409).json({ message: 'Publisher name already exists' });
+                return;
+            }
+
+            // Update publisher name
+            publisher.name = name;
+
+            const savedPublisher = await publisherRepository.save(publisher);
+
+            res.status(200).json({ message: 'Publisher updated successfully', data: savedPublisher });
+        } catch (error: any) {
+            res.status(500).json({ message: 'Failed to update publisher', error: error.message });
+        }
+    }
 }
 
 export default new PublisherController;

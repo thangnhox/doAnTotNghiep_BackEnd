@@ -7,5 +7,6 @@ const discount = Router();
 discount.post('/add', authenticateJWT, (req, res) => DiscountController.insertDiscount(req, res));
 discount.post('/edit/:id', authenticateJWT, (req, res) => DiscountController.editDiscount(req, res));
 discount.get('/hide/:id', authenticateJWT, (req, res) => DiscountController.hideDiscount(req, res));
+discount.get('/', authenticateJWT, (req, res) => DiscountController.all(req, res));
 
 export default discount;

@@ -235,6 +235,202 @@ class BooksController {
         }
     }
 
+    async edit(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        const { id } = req.params;
+        const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds } = req.body;
+
+        try {
+            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
+            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+
+            // Find the book by ID
+            const book = await bookRepository.findOne({ where: { id: Number(id) }, relations: ['categories'] });
+
+            if (!book) {
+                res.status(404).json({ message: 'Book not found' });
+                return;
+            }
+
+            // Ensure the provided author exists
+            if (authorsId !== undefined) {
+                const author = await authorRepository.findOne({ where: { id: authorsId } });
+                if (!author) {
+                    res.status(404).json({ message: 'Author not found' });
+                    return;
+                }
+                book.authorsId = authorsId;
+            }
+
+            // Ensure the provided publisher exists
+            if (publisherId !== undefined) {
+                const publisher = await publisherRepository.findOne({ where: { id: publisherId } });
+                if (!publisher) {
+                    res.status(404).json({ message: 'Publisher not found' });
+                    return;
+                }
+                book.publisherId = publisherId;
+            }
+
+            // Update the book categories
+            if (categoryIds !== undefined) {
+                const categories: Category[] = [];
+                for (const categoryId of categoryIds) {
+                    const category = await categoryRepository.findOne({ where: { id: categoryId } });
+                    if (category) {
+                        categories.push(category);
+                    } else {
+                        res.status(404).json({ message: `Category with ID ${categoryId} not found` });
+                        return;
+                    }
+                }
+                book.categories = categories;
+            }
+
+            // Update the other fields
+            book.title = title !== undefined ? title : book.title;
+            book.description = description !== undefined ? description : book.description;
+            book.pageCount = pageCount !== undefined ? pageCount : book.pageCount;
+            book.price = price !== undefined ? price : book.price;
+            book.fileUrl = fileUrl !== undefined ? fileUrl : book.fileUrl;
+            book.coverUrl = coverUrl !== undefined ? coverUrl : book.coverUrl;
+            book.status = status !== undefined ? (status & 0xFF) : book.status;
+            book.publishDate = publishDate !== undefined ? (new Date(publishDate)).toISOString().split('T')[0] : book.publishDate;
+            book.isRecommended = isRecommended !== undefined ? isRecommended : book.isRecommended;
+
+            const savedBook = await bookRepository.save(book);
+
+            res.status(200).json({ message: 'Book updated successfully', data: savedBook });
+        } catch (error: any) {
+            res.status(500).json({ message: 'Failed to update book', error: error.message });
+        }
+    }
+
+    async search(req: Request, res: Response): Promise<void> {
+        try {
+            const booksRepository = (await AppDataSource.getInstace()).getRepository(BookDetails);
+
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+            const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, BookDetails);
+
+            const fields = req.query.fields ? (req.query.fields as string).split(',') : null;
+            let selectFields = [];
+            if (fields && fields.length > 0) {
+                let validFields = fields.filter(field => BookDetails.validSortColumn.includes(field.trim()));
+                validFields = validFields.filter(field => field.trim() !== 'file_url');
+
+                const invalidFields = fields.filter(field => !validFields.includes(field.trim()));
+                if (invalidFields.length > 0) {
+                    res.status(400).json({ message: `Invalid fields: ${invalidFields.join(', ')}` });
+                    return;
+                }
+                selectFields = validFields.map(field => `BookDetails.${field.trim()}`);
+            } else {
+                selectFields = BookDetails.validSortColumn
+                    .filter(field => field !== 'file_url')
+                    .map(field => `BookDetails.${field}`);
+            }
+
+            const queryBuilder = booksRepository.createQueryBuilder('BookDetails').select(selectFields);
+
+            // Add dynamic search criteria
+            const { title, authorName, publisherName, category, minPrice, maxPrice, exact } = req.query;
+
+            let conditions = [];
+
+            if (title) {
+                const titleKeywords = (title as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);
+                titleKeywords.forEach((keyword, index) => {
+                    conditions.push(`LOWER(BookDetails.Title) LIKE :titleKeyword${index}`);
+                    queryBuilder.setParameter(`titleKeyword${index}`, keyword);
+                });
+            }
+            if (authorName) {
+                const authorKeywords = (authorName as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);
+                authorKeywords.forEach((keyword, index) => {
+                    conditions.push(`LOWER(BookDetails.AuthorName) LIKE :authorKeyword${index}`);
+                    queryBuilder.setParameter(`authorKeyword${index}`, keyword);
+                });
+            }
+            if (publisherName) {
+                const publisherKeywords = (publisherName as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);
+                publisherKeywords.forEach((keyword, index) => {
+                    conditions.push(`LOWER(BookDetails.PublisherName) LIKE :publisherKeyword${index}`);
+                    queryBuilder.setParameter(`publisherKeyword${index}`, keyword);
+                });
+            }
+            if (category) {
+                const categoryKeywords = (category as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);
+                categoryKeywords.forEach((keyword, index) => {
+                    conditions.push(`LOWER(BookDetails.Categories) LIKE :categoryKeyword${index}`);
+                    queryBuilder.setParameter(`categoryKeyword${index}`, keyword);
+                });
+            }
+            if (minPrice) {
+                conditions.push('BookDetails.Price >= :minPrice');
+                queryBuilder.setParameter('minPrice', minPrice);
+            }
+            if (maxPrice) {
+                conditions.push('BookDetails.Price <= :maxPrice');
+                queryBuilder.setParameter('maxPrice', maxPrice);
+            }
+
+            if (conditions.length > 0) {
+                if (exact === 'true') {
+                    queryBuilder.where(conditions.join(' AND '));
+                } else {
+                    queryBuilder.where(conditions.join(' OR '));
+                }
+            } else {
+                res.status(400).json({ 
+                    message: "Must be atleast 1 condition given to search",
+                    data: {
+                        validConditions: [
+                            "title", 
+                            "authorName",
+                            "publisherName",
+                            "category",
+                            "minPrice",
+                            "maxPrice"
+                        ],
+                        validSelectFields: [
+                            'BookID', 'Title', 'Description', 'PageCount', 'Price',
+                            'cover_url', 'status', 'PublishDate',
+                            'IsRecommended', 'PublisherName', 'AuthorName',
+                            'Categories', 'LikesCount'
+                        ]
+                    }
+                });
+                return;
+            }
+
+            const [books, total] = await queryBuilder
+                .orderBy(`BookDetails.${sort}`, order.toUpperCase() as 'ASC' | 'DESC')
+                .skip(offset)
+                .take(pageSize)
+                .getManyAndCount();
+
+            if (books.length === 0) {
+                res.status(404).json({ message: "No books found." });
+                return;
+            }
+
+            res.status(200).json({
+                message: "Books found",
+                data: books,
+                total,
+                page,
+                pageSize,
+                warnings
+            });
+        } catch (error: any) {
+            res.status(500).json({ message: "Failed to fetch books", error: error.message });
+        }
+    }
+
 }
 
 export default new BooksController;

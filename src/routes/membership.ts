@@ -8,5 +8,6 @@ membership.get('/check', authenticateJWT, (req, res) => MembershipController.che
 membership.post('/add', authenticateJWT, (req, res) => MembershipController.insertMembership(req, res));
 membership.post('/edit/:id', authenticateJWT, (req, res) => MembershipController.editMembership(req, res));
 membership.get('/hide/:id', authenticateJWT, (req, res) => MembershipController.hideMembership(req, res));
+membership.get('/', authenticateJWT, (req, res) => MembershipController.all(req, res));
 
 export default membership;

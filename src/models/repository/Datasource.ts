@@ -38,11 +38,13 @@ export class AppDataSource {
 
     static async getInstace(): Promise<DataSource> {
         if (!this.appDataSource.isInitialized) {
+            console.time("Init database");
             try {
                 await this.appDataSource.initialize();
             } catch (err: any) {
                 throw(err);
             }
+            console.timeEnd("Init database");
         }
         return this.appDataSource;
     }

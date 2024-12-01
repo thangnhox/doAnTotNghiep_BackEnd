@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AppDataSource } from '../models/repository/Datasource';
 import { Discount } from '../models/entities/Discount';
-import { checkReqUser } from '../util/checker';
+import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/checker';
 
 class DiscountController {
     // Insert new discount
@@ -76,6 +76,35 @@ class DiscountController {
             await discountRepository.save(discount);
 
             res.status(200).json({ message: 'Discount hidden successfully' });
+        } catch (error) {
+            console.error('Error hiding discount:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    async all(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+        try {
+            const discountRepository = (await AppDataSource.getInstace()).getRepository(Discount);
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+            const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Discount);
+
+            const [discounts, total] = await discountRepository.findAndCount({
+                take: pageSize,
+                skip: offset,
+                order: {
+                    [sort]: order.toUpperCase() as 'ASC' | 'DESC'
+                }
+            });
+
+            res.status(200).json({ 
+                message: "fetch success",
+                data: discounts,
+                total,
+                page,
+                pageSize,
+                warnings
+            });
         } catch (error) {
             console.error('Error hiding discount:', error);
             res.status(500).json({ message: 'Server error' });

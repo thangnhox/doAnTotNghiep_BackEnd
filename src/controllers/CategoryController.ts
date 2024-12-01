@@ -214,6 +214,46 @@ class CategoryController {
             res.status(500).json({ message: "Failed to add category", error: error });
         }
     }
+
+    async edit(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        const { id } = req.params;
+        const { name } = req.body;
+
+        if (!name) {
+            res.status(400).json({ message: "Invalid request" });
+            return;
+        }
+
+        try {
+            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+
+            // Find the category by ID
+            const category = await categoryRepository.findOne({ where: { id: Number(id) } });
+
+            if (!category) {
+                res.status(404).json({ message: 'Category not found' });
+                return;
+            }
+
+            // Check for duplicate category name
+            const existingCategory = await categoryRepository.findOne({ where: { name } });
+            if (existingCategory && existingCategory.id !== category.id) {
+                res.status(409).json({ message: 'Category name already exists' });
+                return;
+            }
+
+            // Update category name
+            category.name = name;
+
+            const savedCategory = await categoryRepository.save(category);
+
+            res.status(200).json({ message: 'Category updated successfully', data: savedCategory });
+        } catch (error: any) {
+            res.status(500).json({ message: 'Failed to update category', error: error.message });
+        }
+    }
 }
 
 export default new CategoryController;

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { User } from '../models/entities/User';
 import { AppDataSource } from '../models/repository/Datasource';
 import { MembershipRecord } from '../models/entities/MembershipRecord';
-import { checkReqUser } from '../util/checker';
+import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/checker';
 import { Membership } from '../models/entities/Membership';
 
 class MembershipController {
@@ -115,6 +115,34 @@ class MembershipController {
             res.status(200).json({ message: 'Membership hidden successfully' });
         } catch (error) {
             console.error('Error hiding membership:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    async all(req: Request, res: Response): Promise<void> {
+        try {
+            const discountRepository = (await AppDataSource.getInstace()).getRepository(Membership);
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+            const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Membership);
+
+            const [discounts, total] = await discountRepository.findAndCount({
+                take: pageSize,
+                skip: offset,
+                order: {
+                    [sort]: order.toUpperCase() as 'ASC' | 'DESC'
+                }
+            });
+
+            res.status(200).json({ 
+                message: "fetch success",
+                data: discounts,
+                total,
+                page,
+                pageSize,
+                warnings
+            });
+        } catch (error) {
+            console.error('Error hiding discount:', error);
             res.status(500).json({ message: 'Server error' });
         }
     }

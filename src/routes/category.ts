@@ -6,6 +6,7 @@ const category = Router();
 
 category.get('/find/:name', (req, res) => CategoryController.find(req, res));
 category.get('/fetch/:id', (req, res) => CategoryController.fetch(req, res));
+category.post('/edit/:id', authenticateJWT, (req, res) => CategoryController.edit(req, res));
 category.post('/add', authenticateJWT, (req, res) => CategoryController.add(req, res));
 category.get('/', (req, res) => CategoryController.all(req, res));
 
