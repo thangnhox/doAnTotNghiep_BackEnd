@@ -18,10 +18,13 @@ export class Orders {
   discountId!: number | null;
 
   @Column("decimal", { name: "TotalPrice", precision: 10, scale: 2 })
-  totalPrice!: string;
+  totalPrice!: number;
 
-  @Column("date", { name: "Date" })
-  date!: string;
+  @Column("date", { name: "CreateDate" })
+  createDate!: string;
+
+  @Column("date", { name: "PaymentDate" })
+  paymentDate!: string | null;
 
   @ManyToOne(() => User, (user) => user.orders, {
     onDelete: "RESTRICT",

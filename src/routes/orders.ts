@@ -5,5 +5,6 @@ import OrdersController from '../controllers/OrdersController';
 const orders = Router();
 
 orders.get('/check/:bookId', authenticateJWT, (req, res) => OrdersController.checkPurcharged(req, res));
+orders.post('/create', authenticateJWT, (req, res) => OrdersController.create(req, res));
 
 export default orders;

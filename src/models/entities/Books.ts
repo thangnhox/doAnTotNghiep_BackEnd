@@ -35,7 +35,7 @@ export class Books {
   pageCount!: number;
 
   @Column("decimal", { name: "Price", precision: 10, scale: 2 })
-  price!: string;
+  price!: number;
 
   @Column("varchar", { name: "file_url", length: 255 })
   fileUrl!: string;
@@ -44,7 +44,7 @@ export class Books {
   coverUrl!: string | null;
 
   @Column("bit", { name: "status" })
-  status!: number;
+  status!: Buffer;
 
   @Column("int", { name: "AuthorsID" })
   authorsId!: number;
@@ -92,4 +92,6 @@ export class Books {
   users!: User[];
 
   static readonly validSortColumn = Object.freeze(['id', 'title', 'price', 'publisherId', 'authorsId']);
+  static readonly SELL: number = 1;
+  static readonly MEMBERSHIP: number = 2;
 }
