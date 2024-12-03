@@ -42,7 +42,7 @@ export class AppDataSource {
             try {
                 await this.appDataSource.initialize();
             } catch (err: any) {
-                throw(err);
+                throw (err);
             }
             console.timeEnd("Init database");
         }

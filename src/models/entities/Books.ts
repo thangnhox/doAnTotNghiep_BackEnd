@@ -16,6 +16,7 @@ import { Orders } from "./Orders";
 import { TagsBooks } from "./TagsBooks";
 import { Category } from "./Category";
 import { User } from "./User";
+import { decimalTranformer } from "../../util/dataTransform";
 
 @Index("Title", ["title"], {})
 @Index("PublisherID", ["publisherId"], {})
@@ -34,7 +35,7 @@ export class Books {
   @Column("int", { name: "PageCount" })
   pageCount!: number;
 
-  @Column("decimal", { name: "Price", precision: 10, scale: 2 })
+  @Column("decimal", { name: "Price", precision: 10, scale: 2, transformer: decimalTranformer })
   price!: number;
 
   @Column("varchar", { name: "file_url", length: 255 })

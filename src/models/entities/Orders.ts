@@ -1,8 +1,9 @@
 import "reflect-metadata";
-import { Column, Entity, Index, JoinColumn, ManyToOne } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, ValueTransformer } from "typeorm";
 import { User } from "./User";
 import { Books } from "./Books";
 import { Discount } from "./Discount";
+import { decimalTranformer } from "../../util/dataTransform";
 
 @Index("BooksID", ["booksId"], {})
 @Index("DiscountID", ["discountId"], {})
@@ -17,7 +18,7 @@ export class Orders {
   @Column("int", { name: "DiscountID", nullable: true })
   discountId!: number | null;
 
-  @Column("decimal", { name: "TotalPrice", precision: 10, scale: 2 })
+  @Column("decimal", { name: "TotalPrice", precision: 10, scale: 2, transformer: decimalTranformer })
   totalPrice!: number;
 
   @Column("date", { name: "CreateDate" })

@@ -73,10 +73,13 @@ class OrdersController {
             const userRepository = (await AppDataSource.getInstace()).getRepository(User);
             const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
 
-            const idAdded: number[] = [];
-            const idDup: number[] = [];
-            const idNotExists: number[] = [];
-            const idNotSell: number[] = [];
+            const added: number[] = [];
+            const dupplicated: number[] = [];
+            const notExists: number[] = [];
+            const notSell: number[] = [];
+            let totalPrice: number = 0;
+            let existsPrice: number = 0;
+            let newPrice: number = 0;
             let discountStatus: number = -1;
             const warning: string[] = [];
 
@@ -110,18 +113,24 @@ class OrdersController {
                 const existsOrder = await ordersRepository.findOne({ where: { userId: req.user.id, booksId: bookId } });
                 const existsBook = await bookRepository.findOne({ where: { id: bookId } });
                 if (existsOrder) {
-                    idDup.push(bookId);
+                    dupplicated.push(bookId);
+
+                    if (!existsOrder.paymentDate) {
+                        totalPrice = totalPrice + existsOrder.totalPrice;
+                        existsPrice = existsPrice + existsOrder.totalPrice;
+                    }
+
                     continue;
                 }
                 if (!existsBook) {
-                    idNotExists.push(bookId);
+                    notExists.push(bookId);
                     continue;
                 }
 
                 const statusNumber = existsBook.status.readUInt8(0);
 
                 if ((statusNumber & Books.SELL) === 0) {
-                    idNotSell.push(bookId);
+                    notSell.push(bookId);
                     continue;
                 }
                 let newOrder = new Orders();
@@ -137,19 +146,26 @@ class OrdersController {
 
                 const toDatabase = ordersRepository.create(newOrder);
                 await ordersRepository.save(toDatabase);
-                idAdded.push(bookId);
+                added.push(bookId);
+                totalPrice = totalPrice + newOrder.totalPrice;
+                newPrice = newPrice + newOrder.totalPrice;
             }
 
             res.status(200).json({
                 message: "Add order success",
                 data: {
-                    Added: idAdded,
-                    Duplicated: idDup,
-                    NotExists: idNotExists,
-                    NotSell: idNotSell,
+                    Added: added,
+                    Duplicated: dupplicated,
+                    NotExists: notExists,
+                    NotSell: notSell,
+                    TotalPrice: {
+                        Exists: existsPrice,
+                        New: newPrice,
+                        Total: totalPrice,
+                    },
                     DiscountApply: discountStatus
                 },
-                warning
+                warning,
             })
 
         } catch (error) {
