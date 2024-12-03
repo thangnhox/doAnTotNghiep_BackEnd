@@ -109,7 +109,7 @@ class MembershipController {
                 return;
             }
 
-            membership.allowNew = 0; // Assuming 0 means hidden/inactive
+            membership.allowNew = Buffer.from([0]); // Assuming 0 means hidden/inactive
             await membershipRepository.save(membership);
 
             res.status(200).json({ message: 'Membership hidden successfully' });
