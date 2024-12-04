@@ -1,24 +1,24 @@
 import "reflect-metadata";
 import {
-  Column,
-  Entity,
-  Index,
-  OneToMany,
-  PrimaryGeneratedColumn,
+    Column,
+    Entity,
+    Index,
+    OneToMany,
+    PrimaryGeneratedColumn,
 } from "typeorm";
 import { Books } from "./Books";
 
 @Index("Name", ["name"], { unique: true })
 @Entity("Publisher", { schema: "test_doantotnghiep" })
 export class Publisher {
-  @PrimaryGeneratedColumn({ type: "int", name: "ID" })
-  id!: number;
+    @PrimaryGeneratedColumn({ type: "int", name: "ID" })
+    id!: number;
 
-  @Column("varchar", { name: "Name", unique: true, length: 255 })
-  name!: string;
+    @Column("varchar", { name: "Name", unique: true, length: 255 })
+    name!: string;
 
-  @OneToMany(() => Books, (books) => books.publisher)
-  books!: Books[];
+    @OneToMany(() => Books, (books) => books.publisher)
+    books!: Books[];
 
-  static readonly validSortColumn = Object.freeze(['id', 'name']);
+    static readonly validSortColumn = Object.freeze(['id', 'name']);
 }
