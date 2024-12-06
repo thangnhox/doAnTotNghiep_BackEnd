@@ -31,9 +31,15 @@ class PublisherController {
             const formattedPublishers = publishers.map(publisher => {
                 if (detail) {
                     const bookCount = publisher.books.length;
+                    const booklist = publisher.books.map(book => {
+                        return {
+                            id: book.id,
+                            title: book.title,
+                        };
+                    });
                     const booksDisplay = bookCount > 3
-                        ? [...publisher.books.slice(0, 3), { title: '...more', id: null }]
-                        : publisher.books;
+                        ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                        : booklist;
                     return {
                         id: publisher.id,
                         name: publisher.name,
@@ -109,9 +115,15 @@ class PublisherController {
 
                 if (detail) {
                     const bookCount = publisher.books.length;
+                    const booklist = publisher.books.map(book => {
+                        return {
+                            id: book.id,
+                            title: book.title,
+                        };
+                    });
                     const booksDisplay = bookCount > 3
-                        ? [...publisher.books.slice(0, 3), { title: '...more', id: null }]
-                        : publisher.books;
+                        ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                        : booklist;
                     res.status(200).json({
                         message: "Publisher found", data: {
                             id: publisher.id,
@@ -150,9 +162,15 @@ class PublisherController {
                 const formattedPublishers = publishers.map(publisher => {
                     if (detail) {
                         const bookCount = publisher.books.length;
+                        const booklist = publisher.books.map(book => {
+                            return {
+                                id: book.id,
+                                title: book.title,
+                            };
+                        });
                         const booksDisplay = bookCount > 3
-                            ? [...publisher.books.slice(0, 3), { title: '...more', id: null }]
-                            : publisher.books;
+                            ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                            : booklist;
                         return {
                             id: publisher.id,
                             name: publisher.name,
@@ -193,9 +211,15 @@ class PublisherController {
 
             if (detail) {
                 const bookCount = publisher.books.length;
+                const booklist = publisher.books.map(book => {
+                    return {
+                        id: book.id,
+                        title: book.title,
+                    };
+                });
                 const booksDisplay = bookCount > 3
-                    ? [...publisher.books.slice(0, 3), { title: '...more', id: null }]
-                    : publisher.books;
+                    ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                    : booklist;
                 res.status(200).json({
                     message: "Publisher found", data: {
                         id: publisher.id,

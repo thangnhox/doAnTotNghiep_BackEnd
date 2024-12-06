@@ -26,9 +26,15 @@ class CategoryController {
             const formattedCategories = categories.map(category => {
                 if (detail) {
                     const bookCount = category.books.length;
+                    const booklist = category.books.map(book => {
+                        return {
+                            id: book.id,
+                            title: book.title,
+                        };
+                    });
                     const booksDisplay = bookCount > 3
-                        ? [...category.books.slice(0, 3), { title: '...more', id: null }]
-                        : category.books;
+                        ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                        : booklist;
                     return {
                         id: category.id,
                         name: category.name,
@@ -77,9 +83,15 @@ class CategoryController {
     
                 if (detail) {
                     const bookCount = category.books.length;
+                    const booklist = category.books.map(book => {
+                        return {
+                            id: book.id,
+                            title: book.title,
+                        };
+                    });
                     const booksDisplay = bookCount > 3
-                        ? [...category.books.slice(0, 3), { title: '...more', id: null }]
-                        : category.books;
+                        ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                        : booklist;
                     res.status(200).json({
                         message: "Category found", data: {
                             id: category.id,
@@ -117,9 +129,15 @@ class CategoryController {
                 const formattedCategories = categories.map(category => {
                     if (detail) {
                         const bookCount = category.books.length;
+                        const booklist = category.books.map(book => {
+                            return {
+                                id: book.id,
+                                title: book.title,
+                            };
+                        });
                         const booksDisplay = bookCount > 3
-                            ? [...category.books.slice(0, 3), { title: '...more', id: null }]
-                            : category.books;
+                            ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                            : booklist;
                         return {
                             id: category.id,
                             name: category.name,
@@ -160,9 +178,15 @@ class CategoryController {
     
             if (detail) {
                 const bookCount = category.books.length;
+                const booklist = category.books.map(book => {
+                    return {
+                        id: book.id,
+                        title: book.title,
+                    };
+                });
                 const booksDisplay = bookCount > 3
-                    ? [...category.books.slice(0, 3), { title: '...more', id: null }]
-                    : category.books;
+                    ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                    : booklist;
                 res.status(200).json({
                     message: "Category found", data: {
                         id: category.id,

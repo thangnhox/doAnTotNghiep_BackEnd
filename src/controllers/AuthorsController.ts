@@ -27,9 +27,15 @@ class AuthorsController {
             const formattedAuthors = authors.map(author => {
                 if (detail) {
                     const bookCount = author.books.length;
+                    const booklist = author.books.map(book => {
+                        return {
+                            id: book.id,
+                            title: book.title,
+                        };
+                    });
                     const booksDisplay = bookCount > 3
-                        ? [...author.books.slice(0, 3), { title: '...more', id: null }]
-                        : author.books;
+                        ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                        : booklist;
                     return {
                         id: author.id,
                         name: author.name,
@@ -163,9 +169,15 @@ class AuthorsController {
             const formattedAuthors = authors.map(author => {
                 if (detail) {
                     const bookCount = author.books.length;
+                    const booklist = author.books.map(book => {
+                        return {
+                            id: book.id,
+                            title: book.title,
+                        };
+                    });
                     const booksDisplay = bookCount > 3
-                        ? [...author.books.slice(0, 3), { title: '...more', id: null }]
-                        : author.books;
+                        ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+                        : booklist;
                     return {
                         id: author.id,
                         name: author.name,
