@@ -4,6 +4,9 @@ import { Orders } from "../models/entities/Orders";
 import { User } from "../models/entities/User";
 import { AppDataSource } from "../models/repository/Datasource";
 import { Discount } from '../models/entities/Discount';
+import { Bill } from "../models/entities/Bill";
+import { v4 as uuidv4 } from 'uuid';
+import { verifySignature } from "../util/momo";
 
 class OrdersController {
     async IsPurcharged(user: User, book: Books): Promise<boolean> {
@@ -12,7 +15,13 @@ class OrdersController {
 
             const confirm = await ordersRepository.findOne({ where: { userId: user.id, booksId: book.id } });
 
-            if (!confirm) return false;
+            if (!confirm || !confirm.billId) return false;
+
+			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
+
+			const bill = await billRepository.findOne({ where: { id: confirm.billId } });
+
+			if (!bill || !bill.paymentDate) return false;
 
             return true;
 
@@ -47,10 +56,17 @@ class OrdersController {
 
             const purcharged = await ordersRepository.findOne({ where: { userId: req.user.id, booksId: book.id } });
 
-            if (!purcharged || purcharged.paymentDate === null) {
+            if (!purcharged || !purcharged.billId) {
                 res.status(404).json({ message: "Book not purcharged" });
                 return;
             }
+
+			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
+			const bill = await billRepository.findOne({ where: { id: purcharged.billId } });
+			if (!bill || !bill.paymentDate) {
+                res.status(404).json({ message: "Book not purcharged" });
+                return;
+			}
 
             res.status(200).json({ message: "Book purcharged", data: purcharged });
 
@@ -72,18 +88,25 @@ class OrdersController {
             const ordersRepository = (await AppDataSource.getInstace()).getRepository(Orders);
             const userRepository = (await AppDataSource.getInstace()).getRepository(User);
             const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
 
-            const added: number[] = [];
+			let billId: string | null = uuidv4();
+			const newBill = new Bill();
+			newBill.id = billId;
+			newBill.userId = req.user.id;
+			newBill.createDate = (new Date).toISOString().split('T')[0];
+			newBill.totalPrice = 0;
+			const savedBill = await billRepository.save(newBill);
+
+            const added = [];
             const dupplicated: number[] = [];
             const notExists: number[] = [];
             const notSell: number[] = [];
             let totalPrice: number = 0;
-            let existsPrice: number = 0;
-            let newPrice: number = 0;
             let discountStatus: number = -1;
             const warning: string[] = [];
 
-            let discount: Discount | null = null;
+			let discount: Discount | null = null;
 
             if (discountId) {
                 const foundDiscount = await discountRepository.findOne({ where: { id: discountId } });
@@ -103,8 +126,9 @@ class OrdersController {
                     } else {
                         user.discounts.push(foundDiscount);
                         await userRepository.save(user);
-                        discount = foundDiscount;
-                        discountStatus = discount.id;
+                        savedBill.discountId = foundDiscount.id;
+						discount = foundDiscount;
+                        discountStatus = foundDiscount.id;
                     }
                 }
             }
@@ -113,13 +137,7 @@ class OrdersController {
                 const existsOrder = await ordersRepository.findOne({ where: { userId: req.user.id, booksId: bookId } });
                 const existsBook = await bookRepository.findOne({ where: { id: bookId } });
                 if (existsOrder) {
-                    dupplicated.push(bookId);
-
-                    if (!existsOrder.paymentDate) {
-                        totalPrice = totalPrice + existsOrder.totalPrice;
-                        existsPrice = existsPrice + existsOrder.totalPrice;
-                    }
-
+					dupplicated.push(bookId);
                     continue;
                 }
                 if (!existsBook) {
@@ -127,7 +145,7 @@ class OrdersController {
                     continue;
                 }
 
-                const statusNumber = existsBook.status.readUInt8(0);
+                const statusNumber = existsBook.status;
 
                 if ((statusNumber & Books.SELL) === 0) {
                     notSell.push(bookId);
@@ -136,34 +154,52 @@ class OrdersController {
                 let newOrder = new Orders();
                 newOrder.userId = req.user.id;
                 newOrder.booksId = bookId;
-                if (discount) {
-                    newOrder.discountId = discount.id;
-                    newOrder.totalPrice = existsBook.price - (existsBook.price * discount.ratio);
-                } else {
-                    newOrder.totalPrice = existsBook.price;
-                }
-                newOrder.createDate = (new Date()).toISOString().split('T')[0];
+				newOrder.billId = savedBill.id;
 
                 const toDatabase = ordersRepository.create(newOrder);
                 await ordersRepository.save(toDatabase);
-                added.push(bookId);
-                totalPrice = totalPrice + newOrder.totalPrice;
-                newPrice = newPrice + newOrder.totalPrice;
+                added.push({
+					id: existsBook.id,
+					name: existsBook.title,
+					price: existsBook.price,
+				});
+                totalPrice = totalPrice + existsBook.price;
             }
+
+			if (added.length === 0) {
+				await billRepository.delete(savedBill.id);
+				billId = null;
+				res.status(400).json({ 
+					message: `Failed to create order`,
+					data: {
+						Duplicated: dupplicated,
+						NotExists: notExists,
+						NotSell: notSell,
+					},
+					warning,
+				});
+				return;
+			}
+
+
+			if (discount) {
+				savedBill.totalPrice = totalPrice - (totalPrice * discount.ratio);
+			} else {
+				savedBill.totalPrice = totalPrice;
+			}
+
+			await billRepository.save(newBill);
 
             res.status(200).json({
                 message: "Add order success",
                 data: {
+					ID: savedBill.id,
                     Added: added,
                     Duplicated: dupplicated,
                     NotExists: notExists,
                     NotSell: notSell,
-                    TotalPrice: {
-                        Exists: existsPrice,
-                        New: newPrice,
-                        Total: totalPrice,
-                    },
-                    DiscountApply: discountStatus
+                    TotalPrice: savedBill.totalPrice,
+                    DiscountApply: discountStatus,
                 },
                 warning,
             })
@@ -173,6 +209,36 @@ class OrdersController {
             res.status(500).json({ message: "Error while creating order" });
         }
     }
+
+	async paymentResult(req: Request, res: Response): Promise<void> {
+		const { orderId, resultCode, callbackToken, transId } = req.body;
+
+		const isValidSignature = verifySignature(req.body);
+		if (!isValidSignature) {
+			res.status(400).json({ message: "Invalid signature" });
+			return;
+		}
+
+		try {
+			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
+
+			if (resultCode === 0) {
+				const bill = await billRepository.findOne({ where: { id: orderId } });
+				if (!bill) {
+					res.status(204).send();
+					return;
+				}
+
+				bill.paymentDate = (new Date()).toISOString().split('T')[0];
+				await billRepository.save(bill);
+			}
+			res.status(204).send();
+
+		} catch (error: any) {
+			console.error('Error handling IPN:', error);
+			res.status(500).json({ message: "Internal server error" });
+		}
+	}
 }
 
 export default new OrdersController;

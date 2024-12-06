@@ -101,17 +101,25 @@ CREATE TABLE test_DoAnTotNghiep.TagsNotes(
     PRIMARY KEY (TagsID, NotesID)
 );
 
+CREATE TABLE test_DoAnTotNghiep.Bill (
+	ID VARCHAR(64) PRIMARY KEY,
+	UserID INT NOT NULL,
+	DiscountID INT NULL,
+	TotalPrice DECIMAL(10, 2) NOT NULL,
+	CreateDate DATE NOT NULL,
+	PaymentDate DATE NULL,
+	FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
+	FOREIGN KEY (DiscountID) REFERENCES test_DoAnTotNghiep.Discount(ID)
+);
+
 CREATE TABLE test_DoAnTotNghiep.Orders (
     UserID INT,
     BooksID INT,
-    DiscountID INT,
-    TotalPrice DECIMAL(10,2) NOT NULL,
-    CreateDate DATE NOT NULL,
-    PaymentDate DATE NULL,
+	BillID VARCHAR(64),
     PRIMARY KEY (UserID, BooksID),
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
     FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID),
-    FOREIGN KEY (DiscountID) REFERENCES test_DoAnTotNghiep.Discount(ID)
+	FOREIGN KEY (BillID) REFERENCES test_DoAnTotNghiep.Bill(ID)
 );
 
 CREATE TABLE test_DoAnTotNghiep.Used (

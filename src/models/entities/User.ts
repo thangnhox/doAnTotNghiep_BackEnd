@@ -16,6 +16,7 @@ import { Discount } from "./Discount";
 import { MembershipRecord } from "./MembershipRecord";
 import { Books } from "./Books";
 import { BookRequest } from "./BookRequest";
+import { Bill } from "./Bill";
 
 @Index("Email", ["email"], { unique: true })
 @Entity("User", { schema: "test_doantotnghiep" })
@@ -40,6 +41,9 @@ export class User {
 
     @Column("tinyint", { name: "isAdmin", width: 1, default: () => "'0'" })
     isAdmin!: number;
+
+	@OneToMany(() => Bill, (bill) => bill.user)
+	bills!: Bill[];
 
     @OneToMany(() => Notes, (notes) => notes.user)
     notes!: Notes[];

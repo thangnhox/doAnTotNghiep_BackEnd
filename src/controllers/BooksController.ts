@@ -114,7 +114,7 @@ class BooksController {
             newBook.price = price;
             newBook.fileUrl = fileUrl;
             newBook.coverUrl = coverUrl || null;
-            newBook.status = Buffer.from([byteStatus]);
+            newBook.status = byteStatus;
             newBook.authorsId = authorsId;
             newBook.publisherId = publisherId;
             newBook.publishDate = (new Date(publishDate)).toISOString().split('T')[0];
@@ -297,7 +297,7 @@ class BooksController {
             book.price = price !== undefined ? price : book.price;
             book.fileUrl = fileUrl !== undefined ? fileUrl : book.fileUrl;
             book.coverUrl = coverUrl !== undefined ? coverUrl : book.coverUrl;
-            book.status = status !== undefined ? Buffer.from([status & 0xFF]) : book.status;
+            book.status = status !== undefined ? (status & 0xFF) : book.status;
             book.publishDate = publishDate !== undefined ? (new Date(publishDate)).toISOString().split('T')[0] : book.publishDate;
             book.isRecommended = isRecommended !== undefined ? isRecommended : book.isRecommended;
 

@@ -8,7 +8,7 @@ import {
 } from "typeorm";
 import { Subscribe } from "./Subscribe";
 import { MembershipRecord } from "./MembershipRecord";
-import { decimalTransformer } from "../../util/dataTransform";
+import { decimalTransformer, bufferTransformer } from "../../util/dataTransform";
 
 @Index("Name", ["name"], { unique: true })
 @Entity("Membership", { schema: "test_doantotnghiep" })
@@ -22,11 +22,11 @@ export class Membership {
     @Column("int", { name: "Rank" })
     rank!: number;
 
-    @Column("bit", { name: "AllowNew" })
-    allowNew!: Buffer;
+    @Column("bit", { name: "AllowNew", transformer: bufferTransformer })
+    allowNew!: number;
 
     @Column("decimal", { name: "Price", precision: 10, scale: 2, transformer: decimalTransformer })
-    price!: string;
+    price!: number;
 
     @OneToMany(() => Subscribe, (subscribe) => subscribe.membership)
     subscribes!: Subscribe[];

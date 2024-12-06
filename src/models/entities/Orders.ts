@@ -3,10 +3,11 @@ import { Column, Entity, Index, JoinColumn, ManyToOne, ValueTransformer } from "
 import { User } from "./User";
 import { Books } from "./Books";
 import { Discount } from "./Discount";
+import { Bill } from "./Bill";
 import { decimalTransformer } from "../../util/dataTransform";
 
 @Index("BooksID", ["booksId"], {})
-@Index("DiscountID", ["discountId"], {})
+@Index("BillID", ["billId"], {})
 @Entity("Orders", { schema: "test_doantotnghiep" })
 export class Orders {
     @Column("int", { primary: true, name: "UserID" })
@@ -15,17 +16,8 @@ export class Orders {
     @Column("int", { primary: true, name: "BooksID" })
     booksId!: number;
 
-    @Column("int", { name: "DiscountID", nullable: true })
-    discountId!: number | null;
-
-    @Column("decimal", { name: "TotalPrice", precision: 10, scale: 2, transformer: decimalTransformer })
-    totalPrice!: number;
-
-    @Column("date", { name: "CreateDate" })
-    createDate!: string;
-
-    @Column("date", { name: "PaymentDate" })
-    paymentDate!: string | null;
+	@Column("varchar", { name: "BillID", nullable: true, length: 64 })
+	billId!: string | null;
 
     @ManyToOne(() => User, (user) => user.orders, {
         onDelete: "RESTRICT",
@@ -41,12 +33,12 @@ export class Orders {
     @JoinColumn([{ name: "BooksID", referencedColumnName: "id" }])
     books!: Books;
 
-    @ManyToOne(() => Discount, (discount) => discount.orders, {
+    @ManyToOne(() => Bill, (bill) => bill.orders, {
         onDelete: "RESTRICT",
         onUpdate: "RESTRICT",
     })
-    @JoinColumn([{ name: "DiscountID", referencedColumnName: "id" }])
-    discount!: Discount;
+    @JoinColumn([{ name: "BillID", referencedColumnName: "id" }])
+    bill!: Bill;
 
     static readonly validSortColumn = Object.freeze(['userId', 'date', 'totalPrice']);
 }

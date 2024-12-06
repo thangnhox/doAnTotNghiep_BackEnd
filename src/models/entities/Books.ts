@@ -16,7 +16,7 @@ import { Orders } from "./Orders";
 import { TagsBooks } from "./TagsBooks";
 import { Category } from "./Category";
 import { User } from "./User";
-import { decimalTransformer } from "../../util/dataTransform";
+import { decimalTransformer, bufferTransformer } from "../../util/dataTransform";
 
 @Index("Title", ["title"], {})
 @Index("PublisherID", ["publisherId"], {})
@@ -44,8 +44,8 @@ export class Books {
     @Column("varchar", { name: "cover_url", nullable: true, length: 255 })
     coverUrl!: string | null;
 
-    @Column("bit", { name: "status" })
-    status!: Buffer;
+    @Column("bit", { name: "status", transformer: bufferTransformer })
+    status!: number;
 
     @Column("int", { name: "AuthorsID" })
     authorsId!: number;

@@ -125,8 +125,6 @@ class UserController {
                 token = makeAuthenticationToken(verified.id, verified.email);
             }
 
-            // TODO: make use of this token
-
             res.status(201).json({ message: "User validated", data: token });
         } catch (err: any) {
             res.status(400).json({ message: "invalid request" });
@@ -164,6 +162,10 @@ class UserController {
 
                 token = makeAuthenticationToken(savedUser.id, savedUser.email);
             } else {
+				if (!existsUser.avatar) {
+					existsUser.avatar = photoURL;
+					await userRepository.save(existsUser);
+				}
                 token = makeAuthenticationToken(existsUser.id, existsUser.email);
             }
 

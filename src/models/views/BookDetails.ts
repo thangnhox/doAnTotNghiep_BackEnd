@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { ViewEntity, ViewColumn } from "typeorm";
+import { bufferTransformer } from "../../util/dataTransform";
 
 @ViewEntity({ schema: "test_doantotnghiep", name: "BookDetails" })
 export class BookDetails {
@@ -24,7 +25,7 @@ export class BookDetails {
     @ViewColumn()
     cover_url!: string;
 
-    @ViewColumn()
+    @ViewColumn({ transformer: bufferTransformer })
     status!: number;
 
     @ViewColumn()

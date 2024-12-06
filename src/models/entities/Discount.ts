@@ -8,7 +8,7 @@ import {
     OneToMany,
     PrimaryGeneratedColumn,
 } from "typeorm";
-import { Orders } from "./Orders";
+import { Bill } from "./Bill";
 import { Subscribe } from "./Subscribe";
 import { User } from "./User";
 
@@ -30,8 +30,8 @@ export class Discount {
     @Column("bit", { name: "Status" })
     status!: number;
 
-    @OneToMany(() => Orders, (orders) => orders.discount)
-    orders!: Orders[];
+    @OneToMany(() => Bill, (bill) => bill.discount)
+    bills!: Bill[];
 
     @OneToMany(() => Subscribe, (subscribe) => subscribe.discount)
     subscribes!: Subscribe[];
