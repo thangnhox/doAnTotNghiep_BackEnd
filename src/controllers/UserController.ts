@@ -162,10 +162,10 @@ class UserController {
 
                 token = makeAuthenticationToken(savedUser.id, savedUser.email);
             } else {
-				if (!existsUser.avatar) {
-					existsUser.avatar = photoURL;
-					await userRepository.save(existsUser);
-				}
+                if (!existsUser.avatar) {
+                    existsUser.avatar = photoURL;
+                    await userRepository.save(existsUser);
+                }
                 token = makeAuthenticationToken(existsUser.id, existsUser.email);
             }
 
@@ -182,9 +182,9 @@ class UserController {
             return;
         }
 
-        res.status(200).json({ 
+        res.status(200).json({
             message: "User info",
-            data: { 
+            data: {
                 id: req.user.id,
                 email: req.user.email,
                 name: req.user.name,
@@ -194,6 +194,58 @@ class UserController {
         })
     }
 
+    async updateInfo(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Failed to fetch user data" });
+            return;
+        }
+
+        const { name, birthYear, oldPassword, newPassword } = req.body;
+
+        try {
+            const changed: string[] = [];
+            if (oldPassword && newPassword) {
+                if (oldPassword !== req.user.password) {
+                    res.status(403).json({ message: "Incorrect password" });
+                    return;
+                }
+
+                req.user.password = newPassword;
+                changed.push("password");
+            }
+
+            if (name && req.user.name !== name) {
+                req.user.name = name;
+                changed.push("name");
+            }
+
+            if (birthYear && req.user.birthYear !== birthYear) {
+                req.user.birthYear = birthYear;
+                changed.push("birthYear");
+            }
+
+            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const saved = await userRepository.save(req.user);
+
+            res.status(200).json({
+                message: "Update success",
+                data: {
+                    Changed: changed,
+                    Info: {
+                        id: saved.id,
+                        email: saved.email,
+                        name: saved.name,
+                        avatar: saved.avatar,
+                        birthYear: saved.birthYear
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Error while update user data:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
 
     async getUser(id: number): Promise<User | null> {
 
