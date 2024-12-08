@@ -32,6 +32,9 @@ export class Books {
     @Column("text", { name: "Description" })
     description!: string;
 
+    @Column("int", { name: "Rank", default: () => "'1'" })
+    rank!: number;
+
     @Column("int", { name: "PageCount" })
     pageCount!: number;
 
@@ -95,4 +98,23 @@ export class Books {
     static readonly validSortColumn = Object.freeze(['id', 'title', 'price', 'publisherId', 'authorsId']);
     static readonly SELL: number = 1;
     static readonly MEMBERSHIP: number = 2;
+
+    allowRead(birthYear: number): boolean {
+        const currentYear = (new Date()).getFullYear();
+        const age = currentYear - birthYear;
+
+        switch (this.rank) {
+            case 4:
+                if (age > 18) return true;
+                else return false;
+            case 3:
+                if (age > 11) return true;
+                else return false;
+            case 2:
+                if (age > 6) return true;
+                else return false;
+            default:
+                return true;
+        }
+    }
 }

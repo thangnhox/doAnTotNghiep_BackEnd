@@ -64,3 +64,10 @@ export function getValidateBookPage(query: ParsedQs): { page: number, width: num
     const density = Math.max(parseInt(query.density as string, 10), 1) || 100;
     return { page, width, height, density };
 }
+
+export function getDateFromToday(days: number): string {
+    const today = new Date();
+    const next30Days = new Date(today.setDate(today.getDate() + days));
+    const formattedDate = next30Days.toISOString().split('T')[0];
+    return formattedDate;
+}

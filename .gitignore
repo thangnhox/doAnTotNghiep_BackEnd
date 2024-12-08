@@ -4,3 +4,4 @@ dist
 .cache
 tsconfig.tsbuildinfo
 *.swp
+.vscode/settings.json

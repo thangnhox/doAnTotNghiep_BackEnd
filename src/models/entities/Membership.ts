@@ -38,4 +38,14 @@ export class Membership {
     membershipRecords!: MembershipRecord[];
 
     static readonly validSortColumn = Object.freeze(['id', 'name', 'price']);
+    static readonly NEW: number = 1;
+    static readonly RENEW: number = 2;
+
+    // [ "read", "tag/note" ]
+    Description(): string[] {
+        const privileges: string[] = [];
+        if (this.rank & 1) privileges.push("read");
+        if (this.rank & 2) privileges.push("tag/note");
+        return privileges;
+    }
 }

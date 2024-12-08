@@ -12,6 +12,12 @@ export class MembershipRecord {
     @Column("int", { primary: true, name: "MembershipID" })
     membershipId!: number;
 
+    @Column("text", { name: "Token" })
+    token!: string | null;
+
+    @Column("varchar", { name: "PartnerClientId", nullable: true, length: 50 })
+    partnerClientId!: string | null;
+
     @Column("date", { name: "Expire_date" })
     expireDate!: string;
 

@@ -7,6 +7,8 @@ import { Discount } from '../models/entities/Discount';
 import { Bill } from "../models/entities/Bill";
 import { v4 as uuidv4 } from 'uuid';
 import { verifySignature } from "../util/momo";
+import UserController from './UserController';
+import { sendMail } from '../services/email';
 
 class OrdersController {
     async IsPurcharged(user: User, book: Books): Promise<boolean> {
@@ -81,6 +83,11 @@ class OrdersController {
             return;
         }
 
+        if (!req.user.birthYear) {
+            res.status(403).json({ message: "User haven't config age yet" });
+            return;
+        }
+
         try {
             const { bookIds, discountId } = req.body;
 
@@ -147,7 +154,7 @@ class OrdersController {
 
                 const statusNumber = existsBook.status;
 
-                if ((statusNumber & Books.SELL) === 0) {
+                if ((statusNumber & Books.SELL) === 0 || !existsBook.allowRead(req.user.birthYear)) {
                     notSell.push(bookId);
                     continue;
                 }
@@ -211,32 +218,33 @@ class OrdersController {
     }
 
 	async paymentResult(req: Request, res: Response): Promise<void> {
-		const { orderId, resultCode, callbackToken, transId } = req.body;
+		const { orderId, resultCode, transId } = req.body;
 
 		const isValidSignature = verifySignature(req.body);
 		if (!isValidSignature) {
 			res.status(400).json({ message: "Invalid signature" });
 			return;
 		}
+        res.status(204).send();
 
 		try {
 			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
 
 			if (resultCode === 0) {
-				const bill = await billRepository.findOne({ where: { id: orderId } });
+				const bill = await billRepository.findOne({ where: { id: orderId }, relations: ['user'] });
 				if (!bill) {
-					res.status(204).send();
+                    console.error("Unexpected removal of bill:", orderId);
 					return;
 				}
 
 				bill.paymentDate = (new Date()).toISOString().split('T')[0];
+                bill.transId = transId;
 				await billRepository.save(bill);
+                await sendMail(bill.user.email, "Your order has success fully purcharged");
 			}
-			res.status(204).send();
 
 		} catch (error: any) {
 			console.error('Error handling IPN:', error);
-			res.status(500).json({ message: "Internal server error" });
 		}
 	}
 }

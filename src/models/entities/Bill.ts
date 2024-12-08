@@ -18,6 +18,9 @@ export class Bill {
 	@Column("int", { name: "DiscountID", nullable: true })
 	discountId!: number | null;
 
+	@Column("bigint", { name: "TransID", nullable: true })
+	transId!: string | null;
+
 	@Column("decimal", { name: "TotalPrice", precision: 10, scale: 2, transformer: decimalTransformer })
 	totalPrice!: number;
 

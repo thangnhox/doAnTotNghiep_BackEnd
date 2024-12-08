@@ -19,6 +19,7 @@ import PDFCache from './services/pdfcacher';
 import orders from './routes/orders';
 import membership from './routes/membership';
 import discount from './routes/discount';
+import { initCron } from './services/cron';
 
 const app = express();
 const port = 3000;
@@ -38,6 +39,9 @@ app.use('/order', orders);
 app.use('/membership', membership);
 app.use('/discount', discount);
 app.use('/', index);
+
+// Cron
+initCron();
 
 const server = app.listen(port, async () => {
   console.log(`Server running on http://localhost:${port}`);

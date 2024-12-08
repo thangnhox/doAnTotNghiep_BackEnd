@@ -1,23 +1,16 @@
-import "reflect-metadata";
-import {
-    Column,
-    Entity,
-    Index,
-    JoinColumn,
-    ManyToOne,
-    PrimaryGeneratedColumn,
-} from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne } from "typeorm";
 import { User } from "./User";
 import { Membership } from "./Membership";
 import { Discount } from "./Discount";
+import { decimalTransformer } from "../../util/dataTransform";
 
 @Index("UserID", ["userId"], {})
 @Index("MembershipID", ["membershipId"], {})
 @Index("DiscountID", ["discountId"], {})
 @Entity("Subscribe", { schema: "test_doantotnghiep" })
 export class Subscribe {
-    @PrimaryGeneratedColumn({ type: "int", name: "ID" })
-    id!: number;
+    @Column("varchar", { primary: true, name: "ID", length: 64 })
+    id!: string;
 
     @Column("int", { name: "UserID" })
     userId!: number;
@@ -28,8 +21,11 @@ export class Subscribe {
     @Column("int", { name: "DiscountID", nullable: true })
     discountId!: number | null;
 
-    @Column("decimal", { name: "TotalPrice", precision: 10, scale: 2 })
-    totalPrice!: string;
+    @Column("bigint", { name: "TransID", nullable: true })
+    transId!: string | null;
+
+    @Column("decimal", { name: "TotalPrice", precision: 10, scale: 2, transformer: decimalTransformer })
+    totalPrice!: number;
 
     @Column("date", { name: "Date" })
     date!: string;
@@ -54,6 +50,4 @@ export class Subscribe {
     })
     @JoinColumn([{ name: "DiscountID", referencedColumnName: "id" }])
     discount!: Discount;
-
-    static readonly validSortColumn = Object.freeze(['id', 'userId', 'totalPrice', 'date']);
 }

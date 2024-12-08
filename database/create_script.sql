@@ -50,6 +50,7 @@ CREATE TABLE test_DoAnTotNghiep.Books (
     Title VARCHAR(255) NOT NULL,
     Description TEXT NOT NULL,
     PageCount INT NOT NULL,
+    Rank INT NOT NULL,
     Price DECIMAL(10, 2) NOT NULL,
     file_url VARCHAR(255) NOT NULL,
     cover_url VARCHAR(255),
@@ -105,6 +106,7 @@ CREATE TABLE test_DoAnTotNghiep.Bill (
 	ID VARCHAR(64) PRIMARY KEY,
 	UserID INT NOT NULL,
 	DiscountID INT NULL,
+    TransID BIGINT NULL,
 	TotalPrice DECIMAL(10, 2) NOT NULL,
 	CreateDate DATE NOT NULL,
 	PaymentDate DATE NULL,
@@ -135,6 +137,7 @@ CREATE TABLE test_DoAnTotNghiep.Subscribe (
     UserID INT NOT NULL,
     MembershipID INT NOT NULL,
     DiscountID INT,
+    TransID BIGINT,
     TotalPrice DECIMAL(10,2) NOT NULL,
     Date DATE NOT NULL,
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
@@ -145,6 +148,8 @@ CREATE TABLE test_DoAnTotNghiep.Subscribe (
 CREATE TABLE test_DoAnTotNghiep.MembershipRecord (
     UserID INT,
     MembershipID INT,
+    Token TEXT NULL,
+    PartnerClientId VARCHAR(50) NULL,
     Expire_date DATE NOT NULL,
     PRIMARY KEY (UserID, MembershipID),
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
@@ -175,40 +180,6 @@ CREATE TABLE test_DoAnTotNghiep.BookRequest (
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
     INDEX (Title)
 );
-
-DELIMITER $$
-
-CREATE TRIGGER after_subscribe_insert
-AFTER INSERT ON test_DoAnTotNghiep.Subscribe
-FOR EACH ROW
-BEGIN
-    DECLARE expire_date DATE;
-
-    -- Check if the corresponding record exists
-    SELECT Expire_date INTO expire_date
-    FROM test_DoAnTotNghiep.MembershipRecord
-    WHERE UserID = NEW.UserID AND MembershipID = NEW.MembershipID;
-
-    IF expire_date IS NOT NULL THEN
-        -- If exists, extend Expire_date for 30 days
-        UPDATE test_DoAnTotNghiep.MembershipRecord
-        SET Expire_date = DATE_ADD(expire_date, INTERVAL 30 DAY)
-        WHERE UserID = NEW.UserID AND MembershipID = NEW.MembershipID;
-    ELSE
-        -- If not exists, insert new record
-        INSERT INTO test_DoAnTotNghiep.MembershipRecord (UserID, MembershipID, Expire_date)
-        VALUES (NEW.UserID, NEW.MembershipID, DATE_ADD(CURDATE(), INTERVAL 30 DAY));
-    END IF;
-END$$
-
-DELIMITER ;
-
-CREATE EVENT IF NOT EXISTS delete_expired_memberships
-ON SCHEDULE EVERY 1 DAY
-STARTS CURRENT_DATE + INTERVAL 1 DAY
-DO
-DELETE FROM test_DoAnTotNghiep.MembershipRecord
-WHERE DATE(Expire_date) = CURDATE() - INTERVAL 1 DAY;
 
 
 CREATE VIEW test_DoAnTotNghiep.BookDetails AS

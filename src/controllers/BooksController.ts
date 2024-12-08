@@ -69,10 +69,10 @@ class BooksController {
             const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
             const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
 
-            const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds } = req.body;
+            const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds, rank } = req.body;
 
             // Validate required fields
-            if (!title || !description || !pageCount || !price || !fileUrl || !authorsId || !publisherId || !publishDate || !categoryIds) {
+            if (!title || !description || !pageCount || !price || !fileUrl || !authorsId || !publisherId || !publishDate || !categoryIds || !rank) {
                 res.status(400).json({ message: "Title, Description, PageCount, Price, FileUrl, AuthorsID, PublisherID, PublishDate, and CategoryID are required." });
                 return;
             }
@@ -120,6 +120,7 @@ class BooksController {
             newBook.publishDate = (new Date(publishDate)).toISOString().split('T')[0];
             newBook.isRecommended = isRecommended || 0;
             newBook.categories = categories;
+            newBook.rank = rank;
 
             const savedBook = await bookRepository.save(newBook);
 
@@ -198,6 +199,11 @@ class BooksController {
                 return;
             }
 
+            if (!req.user.birthYear || !book.allowRead(req.user.birthYear)) {
+                res.status(403).json({ message: "This book is age restricted" });
+                return;
+            }
+
             const isMemberShip = await MembershipController.isValidUser(req.user);
             const isPurcharged = await OrderaController.IsPurcharged(req.user, book);
 
@@ -239,7 +245,7 @@ class BooksController {
         if (!checkReqUser(req, res)) return;
 
         const { id } = req.params;
-        const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds } = req.body;
+        const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds, rank } = req.body;
 
         try {
             const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
@@ -300,6 +306,7 @@ class BooksController {
             book.status = status !== undefined ? (status & 0xFF) : book.status;
             book.publishDate = publishDate !== undefined ? (new Date(publishDate)).toISOString().split('T')[0] : book.publishDate;
             book.isRecommended = isRecommended !== undefined ? isRecommended : book.isRecommended;
+            book.rank = rank !== undefined ? rank : book.rank;
 
             const savedBook = await bookRepository.save(book);
 
