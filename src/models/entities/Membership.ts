@@ -41,11 +41,14 @@ export class Membership {
     static readonly NEW: number = 1;
     static readonly RENEW: number = 2;
 
+    static readonly READ: number = 1;
+    static readonly TAG_NOTE: number = 2;
+
     // [ "read", "tag/note" ]
     Description(): string[] {
         const privileges: string[] = [];
-        if (this.rank & 1) privileges.push("read");
-        if (this.rank & 2) privileges.push("tag/note");
+        if (this.rank & Membership.READ) privileges.push("read");
+        if (this.rank & Membership.TAG_NOTE) privileges.push("tag/note");
         return privileges;
     }
 }

@@ -7,7 +7,7 @@ import { Books } from '../models/entities/Books';
 class AuthorsController {
     async all(req: Request, res: Response): Promise<void> {
         try {
-            const AuthorsRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+            const AuthorsRepository = (await AppDataSource.getInstance()).getRepository(Authors);
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
 
@@ -73,7 +73,7 @@ class AuthorsController {
     async addAuthor(req: Request, res: Response): Promise<void> {
         if (!checkReqUser(req, res)) return;
         try {
-            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+            const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
 
             const { name, birthDate, description, nationality } = req.body;
 
@@ -104,7 +104,7 @@ class AuthorsController {
 
     async find(req: Request, res: Response): Promise<void> {
         try {
-            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+            const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
 
             // Extract query parameters
             const { name, birthYear, description, nationality } = req.query;
@@ -212,7 +212,7 @@ class AuthorsController {
         const { name, birthDate, description, nationality } = req.body;
 
         try {
-            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
+            const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
             const author = await authorRepository.findOne({ where: { id: Number(id) } });
 
             if (!author) {
@@ -248,8 +248,8 @@ class AuthorsController {
         const { id } = req.params;
         
         try {
-            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
-            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
+            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
 
             const author = await authorRepository.findOne({ where: { id: Number(id) } });
 

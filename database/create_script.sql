@@ -95,11 +95,12 @@ CREATE TABLE test_DoAnTotNghiep.TagsBooks (
 );
 
 CREATE TABLE test_DoAnTotNghiep.TagsNotes(
+    ID INT PRIMARY KEY AUTO_INCREMENT,
     TagsID INT NOT NULL,
     NotesID INT NOT NULL,
     FOREIGN KEY (TagsID) REFERENCES test_DoAnTotNghiep.Tags(ID),
     FOREIGN KEY (NotesID) REFERENCES test_DoAnTotNghiep.Notes(ID),
-    PRIMARY KEY (TagsID, NotesID)
+    UNIQUE (TagsID, NotesID)
 );
 
 CREATE TABLE test_DoAnTotNghiep.Bill (

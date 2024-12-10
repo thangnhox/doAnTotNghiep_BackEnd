@@ -6,7 +6,7 @@ import { AppDataSource } from '../models/repository/Datasource';
 class PublisherController {
     async all(req: Request, res: Response): Promise<void> {
         try {
-            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
+            const publisherRepository = (await AppDataSource.getInstance()).getRepository(Publisher);
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
 
@@ -74,7 +74,7 @@ class PublisherController {
             return;
         }
 
-        const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
+        const publisherRepository = (await AppDataSource.getInstance()).getRepository(Publisher);
         const publisher = await publisherRepository.findOne({ where: { name: req.body.publisherName } });
 
         if (publisher !== null) {
@@ -97,7 +97,7 @@ class PublisherController {
 
     async findPublisher(req: Request, res: Response): Promise<void> {
         try {
-            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
+            const publisherRepository = (await AppDataSource.getInstance()).getRepository(Publisher);
             const { name } = req.params;
             const exact = req.query.exact === 'true';
             const detail = req.query.detail === 'true';
@@ -195,7 +195,7 @@ class PublisherController {
 
     async fetch(req: Request, res: Response): Promise<void> {
         try {
-            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
+            const publisherRepository = (await AppDataSource.getInstance()).getRepository(Publisher);
             const { id } = req.params;
             const detail = req.query.detail === 'true';
 
@@ -256,7 +256,7 @@ class PublisherController {
         }
 
         try {
-            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
+            const publisherRepository = (await AppDataSource.getInstance()).getRepository(Publisher);
 
             // Find the publisher by ID
             const publisher = await publisherRepository.findOne({ where: { id: Number(id) } });

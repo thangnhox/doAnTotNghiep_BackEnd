@@ -4,13 +4,13 @@ import {
     Entity,
     Index,
     JoinColumn,
-    ManyToMany,
     ManyToOne,
+    OneToMany,
     PrimaryGeneratedColumn,
 } from "typeorm";
 import { User } from "./User";
 import { Books } from "./Books";
-import { Tags } from "./Tags";
+import { TagsNotes } from "./TagsNotes";
 
 @Index("UserID", ["userId", "booksId", "page"], { unique: true })
 @Index("BooksID", ["booksId"], {})
@@ -45,8 +45,6 @@ export class Notes {
     @JoinColumn([{ name: "BooksID", referencedColumnName: "id" }])
     books!: Books;
 
-    @ManyToMany(() => Tags, (tags) => tags.notes)
-    tags!: Tags[];
-
-    static readonly validSortColumn = Object.freeze(['id', 'booksId']);
+    @OneToMany(() => TagsNotes, (tagsNotes) => tagsNotes.notes)
+    tagsNotes!: TagsNotes[];
 }

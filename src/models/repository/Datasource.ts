@@ -15,6 +15,7 @@ import { Tags } from "../entities/Tags";
 import { TagsBooks } from "../entities/TagsBooks";
 import { BookDetails } from "../views/BookDetails";
 import { Bill } from "../entities/Bill";
+import { TagsNotes } from "../entities/TagsNotes";
 
 function createAppDataSource(): DataSource {
     return new DataSource({
@@ -26,7 +27,7 @@ function createAppDataSource(): DataSource {
         database: process.env.DB_NAME,
         synchronize: false,
         logging: true,
-        entities: [BookRequest, Books, Category, Discount, Membership, MembershipRecord, Notes, Orders, Publisher, Subscribe, User, Authors, Tags, TagsBooks, BookDetails, Bill],
+        entities: [BookRequest, Books, Category, Discount, Membership, MembershipRecord, Notes, Orders, Publisher, Subscribe, User, Authors, Tags, TagsBooks, BookDetails, Bill, TagsNotes],
         migrations: [],
         subscribers: [],
         connectionTimeout: 15000,
@@ -37,7 +38,7 @@ function createAppDataSource(): DataSource {
 export class AppDataSource {
     private static appDataSource: DataSource = createAppDataSource();
 
-    static async getInstace(): Promise<DataSource> {
+    static async getInstance(): Promise<DataSource> {
         if (!this.appDataSource.isInitialized) {
             console.time("Init database");
             try {

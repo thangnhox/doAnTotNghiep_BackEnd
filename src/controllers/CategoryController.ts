@@ -6,7 +6,7 @@ import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/check
 class CategoryController {
     async all(req: Request, res: Response): Promise<void> {
         try {
-            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+            const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
 
@@ -65,7 +65,7 @@ class CategoryController {
 
     async find(req: Request, res: Response): Promise<void> {
         try {
-            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+            const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
             const { name } = req.params;
             const exact = req.query.exact === 'true';
             const detail = req.query.detail === 'true';
@@ -162,7 +162,7 @@ class CategoryController {
 
     async fetch(req: Request, res: Response): Promise<void> {
         try {
-            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+            const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
             const { id } = req.params;
             const detail = req.query.detail === 'true';
     
@@ -218,7 +218,7 @@ class CategoryController {
             return;
         }
 
-        const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+        const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
         const category = await categoryRepository.findOne({ where: { name: req.body.categoryName } });
 
         if (category !== null) {
@@ -251,7 +251,7 @@ class CategoryController {
         }
 
         try {
-            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+            const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
 
             // Find the category by ID
             const category = await categoryRepository.findOne({ where: { id: Number(id) } });

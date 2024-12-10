@@ -23,6 +23,7 @@ import orders from './routes/orders';
 import membership from './routes/membership';
 import discount from './routes/discount';
 import { initCron } from './services/cron';
+import tags from './routes/tags';
 
 const app = express();
 const port = 3000;
@@ -41,6 +42,7 @@ app.use('/authors', authors);
 app.use('/order', orders);
 app.use('/membership', membership);
 app.use('/discount', discount);
+app.use('/tags', tags);
 app.use('/', index);
 
 // Cron
@@ -50,7 +52,7 @@ console.timeEnd("Start server");
 const server = app.listen(port, async () => {
   console.log(`Server running on http://localhost:${port}`);
   PDFCache.setup(524288000, './.cache');
-  await AppDataSource.getInstace();
+  await AppDataSource.getInstance();
 });
 
 ['SIGINT', 'SIGTERM'].forEach(signal => {

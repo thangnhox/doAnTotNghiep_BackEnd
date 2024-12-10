@@ -15,7 +15,7 @@ class UserController {
         }
 
         try {
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
             const userData = await userRepository.findOne({ where: { email } });
             if (!userData) {
                 res.status(404).json({ message: "user email not found" });
@@ -57,7 +57,7 @@ class UserController {
 
 
         try {
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
 
             const email = req.body.email;
             const existingUser = await userRepository.findOne({ where: { email } });
@@ -111,7 +111,7 @@ class UserController {
             user.avatar = decoded.userAvatar;
             user.birthYear = decoded.userBirthYear;
 
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
 
             const verified = await userRepository.findOne({ where: { email: user.email } });
             let token: string = "";
@@ -145,7 +145,7 @@ class UserController {
         }
 
         try {
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
             let token: string = "";
 
             const existsUser = await userRepository.findOne({ where: { email: email } });
@@ -224,7 +224,7 @@ class UserController {
                 changed.push("birthYear");
             }
 
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
             const saved = await userRepository.save(req.user);
 
             res.status(200).json({
@@ -250,7 +250,7 @@ class UserController {
     async getUser(id: number): Promise<User | null> {
 
         try {
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
             const user = await userRepository.findOne({ where: { id } });
             if (user == null) {
                 return null;

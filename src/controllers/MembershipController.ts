@@ -8,20 +8,21 @@ import { Subscribe } from '../models/entities/Subscribe';
 import { v4 as uuidv4 } from 'uuid';
 import { Discount } from '../models/entities/Discount';
 import { decrypt, rsaEncrypt, verifySignature } from '../util/momo';
-import { getSubscriptionToken, manageSubscription, membershipPayment } from '../services/momo';
+import { getSubscriptionToken, initPayment, manageSubscription, membershipPayment } from '../services/momo';
 import { sendMail } from '../services/email';
 
 class MembershipController {
-    async isValidUser(user: User): Promise<boolean> {
+    async isValidUser(user: User): Promise<Membership | null> {
         try {
-            const membershipRepository = (await AppDataSource.getInstace()).getRepository(MembershipRecord);
-            const existRecord = await membershipRepository.findOne({ where: { userId: user.id } });
-            if (existRecord) return true;
+            const membershipRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
+            const existRecord = await membershipRepository.findOne({ where: { userId: user.id }, relations: ['membership'] });
+            if (existRecord) return existRecord.membership;
         } catch (error) {
             console.error(`Error validating: ${error}`);
+            return null;
         }
 
-        return false;
+        return null;
     }
 
     async checkMembership(req: Request, res: Response): Promise<void> {
@@ -31,7 +32,7 @@ class MembershipController {
                 return;
             }
 
-            const membershipRecordRepository = (await AppDataSource.getInstace()).getRepository(MembershipRecord);
+            const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
             const membershipData = await membershipRecordRepository.findOne({ where: { userId: req.user.id }, relations: ['membership'] });
 
             if (!membershipData) {
@@ -53,7 +54,7 @@ class MembershipController {
         const { name, rank, price, allowNew } = req.body;
 
         try {
-            const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
+            const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
 
             // Check if a membership with the same name exists
             const existingMembership = await membershipRepository.findOne({ where: { name } });
@@ -80,7 +81,7 @@ class MembershipController {
         const { rank, price, allowNew } = req.body;
 
         try {
-            const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
+            const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
             const membership = await membershipRepository.findOne({ where: { id: Number(id) } });
 
             if (!membership) {
@@ -107,7 +108,7 @@ class MembershipController {
         const { id } = req.params;
 
         try {
-            const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
+            const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
             const membership = await membershipRepository.findOne({ where: { id: Number(id) } });
 
             if (!membership) {
@@ -127,7 +128,7 @@ class MembershipController {
 
     async all(req: Request, res: Response): Promise<void> {
         try {
-            const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
+            const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Membership);
 
@@ -179,11 +180,11 @@ class MembershipController {
                 return;
             }
 
-            const membershipRecordRepository = (await AppDataSource.getInstace()).getRepository(MembershipRecord);
-            const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
-            const discountRepository = (await AppDataSource.getInstace()).getRepository(Discount);
-            const subscribeRepository = (await AppDataSource.getInstace()).getRepository(Subscribe);
+            const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
+            const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
+            const subscribeRepository = (await AppDataSource.getInstance()).getRepository(Subscribe);
 
             const [isMembership, existsMembership] = await Promise.all([
                 membershipRecordRepository.findOne({ where: { userId: req.user.id } }),
@@ -246,6 +247,29 @@ class MembershipController {
             const toDatabase = subscribeRepository.create(subscribe);
             await subscribeRepository.save(toDatabase);
 
+            const initMomoPayment = await initPayment({
+                partnerCode: process.env.MOMO_PARTNER_CODE as string,
+                amount: subscribe.totalPrice,
+                lang: "vi",
+                extraData: "",
+                ipnUrl: `${process.env.BACK_END_ADDR}/membership/confSubscription`,
+                orderId: subscribe.id,
+                orderInfo: "Pay with momo",
+                redirectUrl: `${process.env.FRONT_END_ADDR}/${process.env.FRONE_END_REDIRECT_PATH}`,
+                requestId: subscribe.id,
+                requestType: "captureWallet"
+            });
+
+            let payUrl = null, deeplink = null, qrCodeUrl = null;
+
+            if (!initMomoPayment) {
+                warning.push("Failed to request momo payment");
+            } else {
+                payUrl = initMomoPayment.payUrl;
+                deeplink = initMomoPayment.deeplink;
+                qrCodeUrl = initMomoPayment.qrCodeUrl;
+            }
+
             res.status(200).json({
                 message: "Init subscription success",
                 data: {
@@ -258,6 +282,9 @@ class MembershipController {
                     },
                     DiscountApplied: discountStatus,
                     TotalPrice: subscribe.totalPrice,
+                    PayUrl: payUrl,
+                    DeepLink: deeplink,
+                    QrCodeUrl: qrCodeUrl,
                 },
                 warning
             });
@@ -278,7 +305,7 @@ class MembershipController {
             const { partnerCode, callbackToken, requestId, orderId, partnerClientId, transId } = req.body;
             const lang: string = "vi";
 
-            const subscribeRepository = (await AppDataSource.getInstace()).getRepository(Subscribe);
+            const subscribeRepository = (await AppDataSource.getInstance()).getRepository(Subscribe);
             const subscribe = await subscribeRepository.findOne({ where: { id: orderId }, relations: ['user'] });
 
             if (!subscribe) {
@@ -292,7 +319,7 @@ class MembershipController {
 
             res.status(204).send();
 
-            const membershipRecordRepository = (await AppDataSource.getInstace()).getRepository(MembershipRecord);
+            const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
 
             const newRecord = new MembershipRecord();
             newRecord.userId = subscribe.userId;
@@ -318,9 +345,9 @@ class MembershipController {
     }
 
     async autoRenewMembership(): Promise<void> {
-        const membershipRecordRepository = (await AppDataSource.getInstace()).getRepository(MembershipRecord);
-        const membershipRepository = (await AppDataSource.getInstace()).getRepository(Membership);
-        const subscribeRepository = (await AppDataSource.getInstace()).getRepository(Subscribe);
+        const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
+        const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
+        const subscribeRepository = (await AppDataSource.getInstance()).getRepository(Subscribe);
 
         const toDay = (new Date()).toISOString().split('T')[0];
         const partnerCode = process.env.MOMO_PARTNER_CODE as string;
@@ -382,7 +409,7 @@ class MembershipController {
                         newSubscription.transId = paymentResponse.transId;
                         await sendMail(record.user.email, "Your subscription has been renewed");
                     }
-                    
+
                     await subscribeRepository.save(newSubscription);
                 }
             } catch (error) {
@@ -399,7 +426,7 @@ class MembershipController {
         }
 
         try {
-            const membershipRecordRepository = (await AppDataSource.getInstace()).getRepository(MembershipRecord);
+            const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
             const membership = await membershipRecordRepository.findOne({ where: { userId: req.user.id } });
 
             if (!membership) {

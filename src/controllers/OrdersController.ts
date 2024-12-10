@@ -14,13 +14,13 @@ import { initPayment } from '../services/momo';
 class OrdersController {
     async IsPurcharged(user: User, book: Books): Promise<boolean> {
         try {
-            const ordersRepository = (await AppDataSource.getInstace()).getRepository(Orders);
+            const ordersRepository = (await AppDataSource.getInstance()).getRepository(Orders);
 
             const confirm = await ordersRepository.findOne({ where: { userId: user.id, booksId: book.id } });
 
             if (!confirm || !confirm.billId) return false;
 
-			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
+			const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
 
 			const bill = await billRepository.findOne({ where: { id: confirm.billId } });
 
@@ -41,8 +41,8 @@ class OrdersController {
         }
 
         try {
-            const ordersRepository = (await AppDataSource.getInstace()).getRepository(Orders);
-            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const ordersRepository = (await AppDataSource.getInstance()).getRepository(Orders);
+            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
 
             const bookid = Number(req.params.bookId);
 
@@ -64,7 +64,7 @@ class OrdersController {
                 return;
             }
 
-			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
+			const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
 			const bill = await billRepository.findOne({ where: { id: purcharged.billId } });
 			if (!bill || !bill.paymentDate) {
                 res.status(404).json({ message: "Book not purcharged" });
@@ -92,11 +92,11 @@ class OrdersController {
         try {
             const { bookIds, discountId } = req.body;
 
-            const discountRepository = (await AppDataSource.getInstace()).getRepository(Discount);
-            const ordersRepository = (await AppDataSource.getInstace()).getRepository(Orders);
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
-            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
-			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
+            const ordersRepository = (await AppDataSource.getInstance()).getRepository(Orders);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
+            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
+			const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
 
 			let billId: string | null = uuidv4();
 			const newBill = new Bill();
@@ -255,7 +255,7 @@ class OrdersController {
         res.status(204).send();
 
 		try {
-			const billRepository = (await AppDataSource.getInstace()).getRepository(Bill);
+			const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
 
 			if (resultCode === 0) {
 				const bill = await billRepository.findOne({ where: { id: orderId }, relations: ['user'] });

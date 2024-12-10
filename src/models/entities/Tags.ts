@@ -4,15 +4,13 @@ import {
     Entity,
     Index,
     JoinColumn,
-    JoinTable,
-    ManyToMany,
     ManyToOne,
     OneToMany,
     PrimaryGeneratedColumn,
 } from "typeorm";
+import { TagsNotes } from "./TagsNotes";
 import { User } from "./User";
 import { TagsBooks } from "./TagsBooks";
-import { Notes } from "./Notes";
 
 @Index("UserID", ["userId", "name"], { unique: true })
 @Entity("Tags", { schema: "test_doantotnghiep" })
@@ -26,6 +24,9 @@ export class Tags {
     @Column("varchar", { name: "Name", length: 255 })
     name!: string;
 
+    @OneToMany(() => TagsNotes, (tagsNotes) => tagsNotes.tags)
+    tagsNotes!: TagsNotes[];
+
     @ManyToOne(() => User, (user) => user.tags, {
         onDelete: "RESTRICT",
         onUpdate: "RESTRICT",
@@ -35,15 +36,4 @@ export class Tags {
 
     @OneToMany(() => TagsBooks, (tagsBooks) => tagsBooks.tags)
     tagsBooks!: TagsBooks[];
-
-    @ManyToMany(() => Notes, (notes) => notes.tags)
-    @JoinTable({
-        name: "TagsNotes",
-        joinColumns: [{ name: "TagsID", referencedColumnName: "id" }],
-        inverseJoinColumns: [{ name: "NotesID", referencedColumnName: "id" }],
-        schema: "test_doantotnghiep",
-    })
-    notes!: Notes[];
-
-    static readonly validSortColumn = Object.freeze(['id', 'name', 'userId']);
 }

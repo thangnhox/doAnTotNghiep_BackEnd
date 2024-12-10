@@ -11,7 +11,7 @@ class DiscountController {
         const { name, ratio, expireDate, status } = req.body;
 
         try {
-            const discountRepository = (await AppDataSource.getInstace()).getRepository(Discount);
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
 
             // Check if a discount with the same name exists
             const existingDiscount = await discountRepository.findOne({ where: { name } });
@@ -38,7 +38,7 @@ class DiscountController {
         const { ratio, expireDate, status } = req.body;
 
         try {
-            const discountRepository = (await AppDataSource.getInstace()).getRepository(Discount);
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
             const discount = await discountRepository.findOne({ where: { id: Number(id) } });
 
             if (!discount) {
@@ -64,7 +64,7 @@ class DiscountController {
         const { id } = req.params;
 
         try {
-            const discountRepository = (await AppDataSource.getInstace()).getRepository(Discount);
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
             const discount = await discountRepository.findOne({ where: { id: Number(id) } });
 
             if (!discount) {
@@ -85,7 +85,7 @@ class DiscountController {
     async all(req: Request, res: Response): Promise<void> {
         if (!checkReqUser(req, res)) return;
         try {
-            const discountRepository = (await AppDataSource.getInstace()).getRepository(Discount);
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Discount);
 

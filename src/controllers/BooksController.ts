@@ -6,9 +6,8 @@ import { checkReqUser, getValidateBookPage, getValidatedPageInfo, sortValidator 
 import { Authors } from '../models/entities/Authors';
 import { BookDetails } from '../models/views/BookDetails';
 import { Category } from '../models/entities/Category';
-import { validateTokenJWT } from '../services/authentication';
 import PDFCache from '../services/pdfcacher';
-import { convertPdfPage2Image, convertPdfPageToImage } from '../util/pdf2img';
+import { convertPdfPage2Image } from '../util/pdf2img';
 import fs from 'fs';
 import MembershipController from './MembershipController';
 import OrderaController from './OrdersController';
@@ -17,7 +16,7 @@ import OrdersController from './OrdersController';
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
         try {
-            const booksRepository = (await AppDataSource.getInstace()).getRepository(BookDetails);
+            const booksRepository = (await AppDataSource.getInstance()).getRepository(BookDetails);
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
             const fields = req.query.fields ? (req.query.fields as string).split(',') : null;
@@ -65,10 +64,10 @@ class BooksController {
         if (!checkReqUser(req, res)) return;
 
         try {
-            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
-            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
-            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
-            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
+            const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
+            const publisherRepository = (await AppDataSource.getInstance()).getRepository(Publisher);
+            const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
 
             const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds, rank } = req.body;
 
@@ -133,7 +132,7 @@ class BooksController {
 
     async fetch(req: Request, res: Response): Promise<void> {
         try {
-            const booksRepository = (await AppDataSource.getInstace()).getRepository(BookDetails);
+            const booksRepository = (await AppDataSource.getInstance()).getRepository(BookDetails);
 
             const bookId = req.params.id;
             const fields = req.query.fields ? (req.query.fields as string).split(',') : null;
@@ -192,7 +191,7 @@ class BooksController {
         }
 
         try {
-            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
             const book = await bookRepository.findOne({ where: { id: Number(id) } });
 
             if (!book) {
@@ -251,10 +250,10 @@ class BooksController {
         const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds, rank } = req.body;
 
         try {
-            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
-            const authorRepository = (await AppDataSource.getInstace()).getRepository(Authors);
-            const publisherRepository = (await AppDataSource.getInstace()).getRepository(Publisher);
-            const categoryRepository = (await AppDataSource.getInstace()).getRepository(Category);
+            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
+            const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
+            const publisherRepository = (await AppDataSource.getInstance()).getRepository(Publisher);
+            const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
 
             // Find the book by ID
             const book = await bookRepository.findOne({ where: { id: Number(id) }, relations: ['categories'] });
@@ -321,7 +320,7 @@ class BooksController {
 
     async search(req: Request, res: Response): Promise<void> {
         try {
-            const booksRepository = (await AppDataSource.getInstace()).getRepository(BookDetails);
+            const booksRepository = (await AppDataSource.getInstance()).getRepository(BookDetails);
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, BookDetails);
@@ -449,7 +448,7 @@ class BooksController {
 
         try {
             const { id } = req.params;
-            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
             const book = await bookRepository.findOne({ where: { id: Number(id) } });
             if (!book) {
                 res.status(404).json({ message: "Book not found" });

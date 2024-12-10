@@ -13,7 +13,7 @@ class AdminController {
         }
 
         try {
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
             const userData = await userRepository.findOne({ where: { email } });
             if (!userData) {
                 res.status(401).json({ message: "access denied" });
@@ -47,7 +47,7 @@ class AdminController {
         }
 
         try {
-            const userRepository = (await AppDataSource.getInstace()).getRepository(User);
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
 
             req.user!.password = req.body.newPassword;
 
