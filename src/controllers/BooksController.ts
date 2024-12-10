@@ -8,10 +8,11 @@ import { BookDetails } from '../models/views/BookDetails';
 import { Category } from '../models/entities/Category';
 import { validateTokenJWT } from '../services/authentication';
 import PDFCache from '../services/pdfcacher';
-import { convertPdfPageToImage } from '../util/pdf2img';
+import { convertPdfPage2Image, convertPdfPageToImage } from '../util/pdf2img';
 import fs from 'fs';
 import MembershipController from './MembershipController';
 import OrderaController from './OrdersController';
+import OrdersController from './OrdersController';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
@@ -219,7 +220,7 @@ class BooksController {
             const pdfCache = PDFCache.getInstance();
             const pdfPath = await pdfCache.loadAndCachePDF(book.fileUrl, book.id);
 
-            const image = await convertPdfPageToImage(pdfPath, page, `${PDFCache.getCacheDir()}/${id}.d/`, { width, height, density });
+            const image = await convertPdfPage2Image(pdfPath, page, `${PDFCache.getCacheDir()}/${id}.d`, { width, height, density });
 
             if (image === null) {
                 res.status(500).json({ message: "Failed to read book" });
@@ -230,6 +231,8 @@ class BooksController {
                 res.status(500).json({ message: "Failed to prepare page" });
                 return;
             }
+
+            console.log(`result image path: ${image.path}`);
 
             res.setHeader('Content-Type', 'image/png');
 
@@ -392,11 +395,11 @@ class BooksController {
                     queryBuilder.where(conditions.join(' OR '));
                 }
             } else {
-                res.status(400).json({ 
+                res.status(400).json({
                     message: "Must be atleast 1 condition given to search",
                     data: {
                         validConditions: [
-                            "title", 
+                            "title",
                             "authorName",
                             "publisherName",
                             "category",
@@ -436,6 +439,38 @@ class BooksController {
         } catch (error: any) {
             res.status(500).json({ message: "Failed to fetch books", error: error.message });
         }
+    }
+
+    async downloadPDF(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+
+        try {
+            const { id } = req.params;
+            const bookRepository = (await AppDataSource.getInstace()).getRepository(Books);
+            const book = await bookRepository.findOne({ where: { id: Number(id) } });
+            if (!book) {
+                res.status(404).json({ message: "Book not found" });
+                return;
+            }
+
+            const percharged = OrdersController.IsPurcharged(req.user, book);
+            if (!percharged) {
+                res.status(403).json({ message: "User has yet to purcharge this book" });
+                return;
+            }
+
+            const pdfCache = PDFCache.getInstance();
+            const pdfPath = await pdfCache.loadAndCachePDF(book.fileUrl, book.id);
+            fs.createReadStream(pdfPath).pipe(res);
+
+        } catch (error) {
+            console.error("Error while handling download request:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+
     }
 
 }

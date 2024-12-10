@@ -1,5 +1,5 @@
 import axios from "axios";
-import { generateAutoPaymentSignature, generateGetTokenSignature, generateManageSignature } from "../util/momo";
+import { generateAutoPaymentSignature, generateGetTokenSignature, generateInitPaymentSignature, generateManageSignature } from "../util/momo";
 
 interface getSubscriptionTokenRequestFormat {
     partnerCode: string,
@@ -35,7 +35,11 @@ export async function getSubscriptionToken(data: getSubscriptionTokenRequestForm
 
     try {
         const momoHost = process.env.MOMO_HOST;
-        const response = await axios.post<getSubscriptionTokenResponseFormat>(`https://${momoHost}/v2/gateway/api/subscription/create`, postData);
+        const response = await axios.post<getSubscriptionTokenResponseFormat>(`https://${momoHost}/v2/gateway/api/subscription/create`, postData, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
         return response.data;
 
@@ -87,7 +91,11 @@ export async function membershipPayment(data: autoPaymentRequestFormat): Promise
 
     try {
         const momoHost = process.env.MOMO_HOST;
-        const response = await axios.post<autoPaymentResponseFormat>(`https://${momoHost}/v2/gateway/api/subscription/pay`, postData);
+        const response = await axios.post<autoPaymentResponseFormat>(`https://${momoHost}/v2/gateway/api/subscription/pay`, postData, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
         return response.data;
 
@@ -129,7 +137,60 @@ export async function manageSubscription(data: manageDataRequest): Promise<manag
 
     try {
         const momoHost = process.env.MOMO_HOST;
-        const response = await axios.post<manageDataResponse>(`https://${momoHost}/v2/gateway/api/subscription/pay`, postData);
+        const response = await axios.post<manageDataResponse>(`https://${momoHost}/v2/gateway/api/subscription/pay`, postData, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        return response.data;
+
+    } catch (error) {
+        console.error("Error while getting subscription token:", error);
+        return null;
+    }
+}
+
+
+interface InitPaymentDataRequestFormat {
+    partnerCode: string;
+    orderId: string;
+    requestId: string;
+    amount: number;
+    orderInfo: string;
+    extraData: string;
+    requestType: string;
+    redirectUrl: string;
+    ipnUrl: string;
+    lang: string;
+}
+
+interface InitPaymentDataResponseFormat {
+    partnerCode: string;
+    orderId: string;
+    requestId: string;
+    amount: number;
+    responseTime: number;
+    message: string;
+    resultCode: number;
+    payUrl: string;
+    deeplink: string;
+    qrCodeUrl: string;
+}
+
+export async function initPayment(data: InitPaymentDataRequestFormat): Promise<InitPaymentDataResponseFormat | null> {
+    const postData = {
+        ...data,
+        signature: generateInitPaymentSignature(data),
+    };
+
+    try {
+        const momoHost = process.env.MOMO_HOST;
+        const response = await axios.post<InitPaymentDataResponseFormat>(`https://${momoHost}/v2/gateway/api/create`, postData, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
         return response.data;
 

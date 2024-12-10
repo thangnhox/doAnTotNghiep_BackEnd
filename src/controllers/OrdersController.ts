@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { verifySignature } from "../util/momo";
 import UserController from './UserController';
 import { sendMail } from '../services/email';
+import { initPayment } from '../services/momo';
 
 class OrdersController {
     async IsPurcharged(user: User, book: Books): Promise<boolean> {
@@ -195,7 +196,30 @@ class OrdersController {
 				savedBill.totalPrice = totalPrice;
 			}
 
-			await billRepository.save(newBill);
+			await billRepository.save(savedBill);
+
+            const initMomoPayment = await initPayment({
+                partnerCode: process.env.MOMO_PARTNER_CODE as string,
+                amount: savedBill.totalPrice,
+                lang: "vi",
+                extraData: "",
+                ipnUrl: `${process.env.BACK_END_ADDR}/order/confirm`,
+                orderId: savedBill.id,
+                orderInfo: "Pay with momo",
+                redirectUrl: `${process.env.FRONT_END_ADDR}/${process.env.FRONE_END_REDIRECT_PATH}`,
+                requestId: savedBill.id,
+                requestType: "captureWallet"
+            });
+
+            let payUrl = null, deeplink = null, qrCodeUrl = null;
+
+            if (!initMomoPayment) {
+                warning.push("Failed to request momo payment");
+            } else {
+                payUrl = initMomoPayment.payUrl;
+                deeplink = initMomoPayment.deeplink;
+                qrCodeUrl = initMomoPayment.qrCodeUrl;
+            }
 
             res.status(200).json({
                 message: "Add order success",
@@ -207,6 +231,9 @@ class OrdersController {
                     NotSell: notSell,
                     TotalPrice: savedBill.totalPrice,
                     DiscountApply: discountStatus,
+                    PayUrl: payUrl,
+                    DeepLink: deeplink,
+                    QrCodeUrl: qrCodeUrl
                 },
                 warning,
             })

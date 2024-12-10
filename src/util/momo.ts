@@ -10,18 +10,31 @@ interface DataToVerify {
     partnerCode: string;
     orderId: string;
     requestId: string;
-    amount: string;
+    amount: number;
     orderInfo: string;
     orderType: string;
     partnerClientId: string;
     callbackToken: string;
-    transId: string;
-    resultCode: string;
+    transId: number;
+    resultCode: number;
     message: string;
     payType: string;
-    responseTime: string;
+    responseTime: number;
     extraData: string;
     signature: string;
+}
+
+interface InitPaymentData {
+    partnerCode: string;
+    orderId: string;
+    requestId: string;
+    amount: number;
+    orderInfo: string;
+    extraData: string;
+    requestType: string;
+    redirectUrl: string;
+    ipnUrl: string;
+    lang: string;
 }
 
 interface DataToSign {
@@ -93,6 +106,15 @@ export function generateManageSignature(data: ManageData): string {
     return generatedSignature;
 }
 
+export function generateInitPaymentSignature(data: InitPaymentData): string {
+    const rawSignature = `accessKey=${accessKey}&amount=${data.amount}&extraData=${data.extraData}&ipnUrl=${data.ipnUrl}&orderId=${data.orderId}&orderInfo=${data.orderInfo}&partnerCode=${data.partnerCode}&redirectUrl=${data.redirectUrl}&requestId=${data.requestId}&requestType=${data.requestType}`;
+    
+    const signature = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');
+    
+    return signature;
+}
+
+
 export function decrypt(encrypted: string): { value: string; initialOrderId: string; userAlias: string; profileId: string } {
     const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(secretKey, 'utf-8'), iv);
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
@@ -103,8 +125,7 @@ export function decrypt(encrypted: string): { value: string; initialOrderId: str
 
 // Load public key from file
 const publicKeyPem = fs.readFileSync(process.env.MOMO_PUBKEY as string, 'utf-8');
-const publicKey = new NodeRSA(publicKeyPem);
-publicKey.setOptions({ encryptionScheme: 'pkcs1' });
+const publicKey = new NodeRSA(publicKeyPem, 'pkcs8-public', { encryptionScheme: 'pkcs1' });
 
 // RSA Encryption
 export function rsaEncrypt(data: { value: string; initialOrderId: string }): string {
@@ -113,7 +134,3 @@ export function rsaEncrypt(data: { value: string; initialOrderId: string }): str
     return encrypted;
 } 
 
-// Example usage for RSA encryption
-const dataToEncrypt = { value: 'someValue', initialOrderId: 'someOrderId' };
-const encryptedData = rsaEncrypt(dataToEncrypt);
-console.log('RSA Encrypted:', encryptedData);

@@ -1,4 +1,7 @@
 /// <reference path="./types/express.d.ts" />
+
+console.time("Start server");
+
 import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
@@ -43,6 +46,7 @@ app.use('/', index);
 // Cron
 initCron();
 
+console.timeEnd("Start server");
 const server = app.listen(port, async () => {
   console.log(`Server running on http://localhost:${port}`);
   PDFCache.setup(524288000, './.cache');
