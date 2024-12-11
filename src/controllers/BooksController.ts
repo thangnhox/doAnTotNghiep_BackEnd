@@ -209,6 +209,7 @@ class BooksController {
 
             if (!isMemberShip && !isPurcharged) {
                 res.status(403).json({ message: `${req.user.name} is not a membership nor purcharged the book.` });
+                return;
             }
 
             if (page > book.pageCount) {
