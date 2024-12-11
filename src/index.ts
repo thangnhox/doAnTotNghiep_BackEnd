@@ -24,6 +24,7 @@ import membership from './routes/membership';
 import discount from './routes/discount';
 import { initCron } from './services/cron';
 import tags from './routes/tags';
+import notes from './routes/notes';
 
 const app = express();
 const port = 3000;
@@ -43,6 +44,7 @@ app.use('/order', orders);
 app.use('/membership', membership);
 app.use('/discount', discount);
 app.use('/tags', tags);
+app.use('/notes', notes);
 app.use('/', index);
 
 // Cron

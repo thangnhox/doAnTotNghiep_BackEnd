@@ -7,6 +7,7 @@ import { TagsBooks } from '../models/entities/TagsBooks';
 import { Notes } from '../models/entities/Notes';
 import { Books } from '../models/entities/Books';
 import { TagsNotes } from '../models/entities/TagsNotes';
+import { getValidatedPageInfo } from '../util/checker';
 
 class TagsController {
 
@@ -113,7 +114,7 @@ class TagsController {
 
                 const tagsBooksRepository = (await AppDataSource.getInstance()).getRepository(TagsBooks);
 
-                const attached = tagsBooksRepository.findOne({ where: { tagsId: existsTag.id, booksId: Number(bookId), page: bookPage } });
+                const attached = await tagsBooksRepository.findOne({ where: { tagsId: existsTag.id, booksId: Number(bookId), page: bookPage } });
 
                 if (!attached) {
                     const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
@@ -342,6 +343,80 @@ class TagsController {
 
         } catch (error) {
             console.error("Error while remove tag", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
+
+    async search(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+    
+        try {
+            const tagsRepository = (await AppDataSource.getInstance()).getRepository(Tags);
+    
+            // Extract query parameters
+            const { bookId, notesId, tagsName } = req.query;
+    
+            // Validate that at least one parameter is provided
+            if (!bookId && !notesId && !tagsName) {
+                res.status(400).json({ message: "At least one of the following query parameters must be provided: bookId, notesId, tagsName." });
+                return;
+            }
+    
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+    
+            // Build the query dynamically
+            const queryBuilder = tagsRepository.createQueryBuilder('tag')
+                .leftJoinAndSelect('tag.user', 'user')
+                .where('tag.userId = :userId', { userId: req.user.id });
+    
+            let conditions = [];
+    
+            if (bookId) {
+                queryBuilder.leftJoin('tag.tagsBooks', 'tagsBooks');
+                conditions.push('tagsBooks.booksId = :bookId');
+                queryBuilder.setParameter('bookId', bookId);
+            }
+    
+            if (notesId) {
+                queryBuilder.leftJoin('tag.tagsNotes', 'tagsNotes');
+                conditions.push('tagsNotes.notesId = :notesId');
+                queryBuilder.setParameter('notesId', notesId);
+            }
+    
+            if (tagsName) {
+                const nameKeywords = (tagsName as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);
+                nameKeywords.forEach((keyword, index) => {
+                    conditions.push(`LOWER(tag.name) LIKE :nameKeyword${index}`);
+                    queryBuilder.setParameter(`nameKeyword${index}`, keyword);
+                });
+            }
+    
+            if (conditions.length > 0) {
+                const joinedConditions = conditions.join(' OR ');
+                queryBuilder.andWhere(`(${joinedConditions})`);
+            }
+    
+            const [tags, total] = await queryBuilder
+                .skip(offset)
+                .take(pageSize)
+                .getManyAndCount();
+    
+            if (tags.length === 0) {
+                res.status(404).json({ message: "No tags found." });
+                return;
+            }
+
+            const formattedResult = tags.map(tag => ({
+                id: tag.id,
+                name: tag.name
+            }));
+    
+            res.status(200).json({ message: "Tags found", data: formattedResult, total, page, pageSize });
+        } catch (error) {
+            console.log("Error while searching tags:", error);
             res.status(500).json({ message: "Server error" });
         }
     }

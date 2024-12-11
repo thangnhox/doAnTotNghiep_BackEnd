@@ -11,5 +11,6 @@ tags.get('/detach/:id', authenticateJWT, (req, res) => TagsController.detach(req
 tags.get('/remove/:id', authenticateJWT, (req, res) => TagsController.remove(req, res));
 tags.get('/add', authenticateJWT, (req, res) => TagsController.add(req, res));
 tags.get('/rename', authenticateJWT, (req, res) => TagsController.rename(req, res));
+tags.get('/search', authenticateJWT, (req, res) => TagsController.search(req, res));
 
 export default tags;
