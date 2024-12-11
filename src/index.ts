@@ -6,8 +6,13 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import Logger from './util/logger';
 
 dotenv.config();
+
+// Logger
+Logger.init(process.env.SERVER_LOG_PATH || 'Server.log');
+
 
 // route
 import index from './routes/index';

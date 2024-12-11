@@ -1,5 +1,6 @@
 import axios from "axios";
-import { generateAutoPaymentSignature, generateGetTokenSignature, generateInitPaymentSignature, generateManageSignature } from "../util/momo";
+import { generateAutoPaymentSignature, generateGetTokenSignature, generateSinglePaymentSignature, generateManageSignature, generateSubscriptionSignature } from "../util/momo";
+import Logger from "../util/logger";
 
 interface getSubscriptionTokenRequestFormat {
     partnerCode: string,
@@ -100,7 +101,7 @@ export async function membershipPayment(data: autoPaymentRequestFormat): Promise
         return response.data;
 
     } catch (error) {
-        console.error("Error while getting subscription token:", error);
+        console.error("Error while request membership payment:", error);
         return null;
     }
 }
@@ -146,47 +147,47 @@ export async function manageSubscription(data: manageDataRequest): Promise<manag
         return response.data;
 
     } catch (error) {
-        console.error("Error while getting subscription token:", error);
+        console.error("Error while request manage token API:", error);
         return null;
     }
 }
 
 
-interface InitPaymentDataRequestFormat {
+interface SinglePaymentDataRequestFormat {
     partnerCode: string;
-    orderId: string;
     requestId: string;
     amount: number;
+    orderId: string;
     orderInfo: string;
-    extraData: string;
-    requestType: string;
     redirectUrl: string;
     ipnUrl: string;
+    requestType: string;
+    extraData: string;
     lang: string;
 }
 
-interface InitPaymentDataResponseFormat {
+interface SinglePaymentDataResponseFormat {
     partnerCode: string;
-    orderId: string;
     requestId: string;
+    orderId: string;
     amount: number;
     responseTime: number;
     message: string;
     resultCode: number;
     payUrl: string;
-    deeplink: string;
-    qrCodeUrl: string;
+    deeplink: string | null;
+    qrCodeUrl: string | null;
 }
 
-export async function initPayment(data: InitPaymentDataRequestFormat): Promise<InitPaymentDataResponseFormat | null> {
+export async function singlePayAPI(data: SinglePaymentDataRequestFormat): Promise<SinglePaymentDataResponseFormat | null> {
     const postData = {
         ...data,
-        signature: generateInitPaymentSignature(data),
+        signature: generateSinglePaymentSignature(data),
     };
 
     try {
         const momoHost = process.env.MOMO_HOST;
-        const response = await axios.post<InitPaymentDataResponseFormat>(`https://${momoHost}/v2/gateway/api/create`, postData, {
+        const response = await axios.post<SinglePaymentDataResponseFormat>(`https://${momoHost}/v2/gateway/api/create`, postData, {
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -195,7 +196,73 @@ export async function initPayment(data: InitPaymentDataRequestFormat): Promise<I
         return response.data;
 
     } catch (error) {
-        console.error("Error while getting subscription token:", error);
+        console.error("Error while request single pay:", error);
+        return null;
+    }
+}
+
+interface SubscriptionInfoRequestFormat {
+    name: string;
+    partnerSubsId: string;
+    subsOwner: string;
+    type: string;
+    recurringAmount: number;
+    frequency: string;
+    nextPaymentDate: string;
+    expiryDate: string;
+}
+
+interface InitSubscriptionDataRequestFormat {
+    partnerCode: string;
+    requestId: string;
+    amount: number;
+    orderId: string;
+    orderInfo: string;
+    redirectUrl: string;
+    ipnUrl: string;
+    partnerClientId: string;
+    extraData: string;
+    requestType: string;
+    subscriptionInfo: SubscriptionInfoRequestFormat;
+    lang: string;
+}
+
+interface InitSubscriptionDataResponseFormat {
+    partnerCode: string;
+    requestId: string;
+    orderId: string;
+    amount: number;
+    payUrl: string;
+    deeplink: string | null;
+    qrCodeUrl: string | null;
+    resultCode: number;
+    message: string;
+    responseTime: number;
+    partnerClientId: string;
+}
+
+export async function initSubscriptionAPI(data: InitSubscriptionDataRequestFormat): Promise<InitSubscriptionDataResponseFormat | null> {
+    const postData = {
+        ...data,
+        signature: generateSubscriptionSignature(data),
+    };
+
+    try {
+        const momoHost = process.env.MOMO_HOST;
+
+        Logger.getInstance().info(`Request body: ${postData}`);
+
+        const response = await axios.post<InitSubscriptionDataResponseFormat>(`https://${momoHost}/v2/gateway/api/create`, postData, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        return response.data;
+
+    } catch (error) {
+        console.error("Error while request create subscription:", error);
+        Logger.getInstance().error(`Response: ${error}`);
         return null;
     }
 }

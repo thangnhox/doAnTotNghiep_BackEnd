@@ -6,13 +6,33 @@ const secretKey = process.env.MOMO_SECRET as string;
 const accessKey = process.env.MOMO_ACCESS as string;
 const iv = Buffer.alloc(16); // 16-byte buffer filled with zeros
 
-interface DataToVerify {
+export enum Frequency_String {
+    DAILY = "DAILY",
+    WEEKLY = "WEEKLY",
+    BI_WEEKLY = "BI_WEEKLY",
+    MONTHLY = "MONTHLY",
+    BI_MONTHLY = "BI_MONTHLY",
+    QUARTERLY = "QUARTERLY",
+    SEMI_ANNUALLY = "SEMI_ANNUALLY"
+}
+
+export enum Frequency_Number {
+    DAILY = 1,
+    WEEKLY = 7,
+    BI_WEEKLY = 14,
+    MONTHLY = 30,
+    BI_MONTHLY = 60,
+    QUARTERLY = 90,
+    SEMI_ANNUALLY = 180
+}
+
+interface SubscriptionDataToVerify {
     partnerCode: string;
-    orderId: string;
     requestId: string;
     amount: number;
-    orderInfo: string;
+    orderId: string;
     orderType: string;
+    orderInfo: string;
     partnerClientId: string;
     callbackToken: string;
     transId: number;
@@ -24,7 +44,36 @@ interface DataToVerify {
     signature: string;
 }
 
-interface InitPaymentData {
+interface SubscriptionData {
+    partnerCode: string;
+    requestId: string;
+    amount: number;
+    orderId: string;
+    orderInfo: string;
+    redirectUrl: string;
+    ipnUrl: string;
+    partnerClientId: string;
+    extraData: string;
+    requestType: string;
+}
+
+interface singlePayDataToVery {
+    partnerCode: string;
+    orderId: string;
+    requestId: string;
+    amount: number;
+    orderInfo: string;
+    orderType: string;
+    transId: number;
+    resultCode: number;
+    message: string;
+    payType: string;
+    responseTime: number;
+    extraData: string;
+    signature: string;
+};
+
+interface SinglePaymentData {
     partnerCode: string;
     orderId: string;
     requestId: string;
@@ -67,7 +116,7 @@ interface ManageData {
     action: string;
 }
 
-export function verifySignature(data: DataToVerify): boolean {
+export function verifySubscriptionSignature(data: SubscriptionDataToVerify): boolean {
     const {
         partnerCode, orderId, requestId, amount, orderInfo, orderType,
         partnerClientId, callbackToken, transId, resultCode, message,
@@ -75,6 +124,17 @@ export function verifySignature(data: DataToVerify): boolean {
     } = data;
 
     const rawData = `accessKey=${accessKey}&amount=${amount}&callbackToken=${callbackToken}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerClientId=${partnerClientId}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
+
+    const generatedSignature = crypto.createHmac('sha256', secretKey).update(rawData).digest('hex');
+    return generatedSignature === signature;
+}
+
+export function verifySinglePaySignature(data: singlePayDataToVery): boolean {
+    const {
+        amount, extraData, message, orderId, orderInfo, orderType, partnerCode, payType, requestId, responseTime, resultCode, signature, transId
+    } = data;
+
+    const rawData = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
 
     const generatedSignature = crypto.createHmac('sha256', secretKey).update(rawData).digest('hex');
     return generatedSignature === signature;
@@ -106,7 +166,17 @@ export function generateManageSignature(data: ManageData): string {
     return generatedSignature;
 }
 
-export function generateInitPaymentSignature(data: InitPaymentData): string {
+export function generateSubscriptionSignature(data: SubscriptionData): string {
+    const { 
+        amount, extraData, ipnUrl, orderId, orderInfo, partnerClientId, partnerCode, redirectUrl, requestId, requestType
+    } = data;
+
+    const rawData = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerClientId=${partnerClientId}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+    const generatedSignature = crypto.createHmac('sha256', secretKey).update(rawData).digest('hex');
+    return generatedSignature;
+}
+
+export function generateSinglePaymentSignature(data: SinglePaymentData): string {
     const rawSignature = `accessKey=${accessKey}&amount=${data.amount}&extraData=${data.extraData}&ipnUrl=${data.ipnUrl}&orderId=${data.orderId}&orderInfo=${data.orderInfo}&partnerCode=${data.partnerCode}&redirectUrl=${data.redirectUrl}&requestId=${data.requestId}&requestType=${data.requestType}`;
     
     const signature = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');

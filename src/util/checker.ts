@@ -71,3 +71,17 @@ export function getDateFromToday(days: number): string {
     const formattedDate = next30Days.toISOString().split('T')[0];
     return formattedDate;
 }
+
+export function isValidUrl(url: string) {
+    try {
+        const validUrl = new URL(process.env.FRONT_END_ADDR as string);
+        const checkUrl = new URL(url);
+
+        return validUrl.hostname === checkUrl.hostname &&
+            validUrl.port === checkUrl.port;
+
+    } catch (error) {
+        console.error("Invalid URL format:", error);
+        return false;
+    }
+}

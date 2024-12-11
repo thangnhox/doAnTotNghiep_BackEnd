@@ -6,10 +6,10 @@ import { AppDataSource } from "../models/repository/Datasource";
 import { Discount } from '../models/entities/Discount';
 import { Bill } from "../models/entities/Bill";
 import { v4 as uuidv4 } from 'uuid';
-import { verifySignature } from "../util/momo";
-import UserController from './UserController';
+import { verifySinglePaySignature } from "../util/momo";
 import { sendMail } from '../services/email';
-import { initPayment } from '../services/momo';
+import { singlePayAPI } from '../services/momo';
+import { isValidUrl } from '../util/checker';
 
 class OrdersController {
     async IsPurcharged(user: User, book: Books): Promise<boolean> {
@@ -90,7 +90,23 @@ class OrdersController {
         }
 
         try {
-            const { bookIds, discountId } = req.body;
+            const { bookIds, discountId, redirectUrl } = req.body;
+
+            if (!redirectUrl || !bookIds) {
+                res.status(400).json({ 
+                    message: "Missing required field",
+                    data: { 
+                        bookIds: !bookIds ? true : false,
+                        redirectUrl: !redirectUrl ? true : false,
+                    }
+                });
+                return;
+            }
+
+            if (!isValidUrl(redirectUrl)) {
+                res.status(400).json({ message: "Invalid url" });
+                return;
+            }
 
             const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
             const ordersRepository = (await AppDataSource.getInstance()).getRepository(Orders);
@@ -113,8 +129,10 @@ class OrdersController {
             let totalPrice: number = 0;
             let discountStatus: number = -1;
             const warning: string[] = [];
+            const savedOrders: Orders[] = [];
 
 			let discount: Discount | null = null;
+            let curUser: User | null = null;
 
             if (discountId) {
                 const foundDiscount = await discountRepository.findOne({ where: { id: discountId } });
@@ -132,8 +150,7 @@ class OrdersController {
                     if (discountUsed) {
                         warning.push(`${user.name} already used ${foundDiscount.name}`);
                     } else {
-                        user.discounts.push(foundDiscount);
-                        await userRepository.save(user);
+                        curUser = user;
                         savedBill.discountId = foundDiscount.id;
 						discount = foundDiscount;
                         discountStatus = foundDiscount.id;
@@ -165,7 +182,8 @@ class OrdersController {
 				newOrder.billId = savedBill.id;
 
                 const toDatabase = ordersRepository.create(newOrder);
-                await ordersRepository.save(toDatabase);
+                const savedOrder = await ordersRepository.save(toDatabase);
+                savedOrders.push(savedOrder);
                 added.push({
 					id: existsBook.id,
 					name: existsBook.title,
@@ -198,28 +216,41 @@ class OrdersController {
 
 			await billRepository.save(savedBill);
 
-            const initMomoPayment = await initPayment({
+            const initMomoPayment = await singlePayAPI({
                 partnerCode: process.env.MOMO_PARTNER_CODE as string,
+                requestId: savedBill.id,
                 amount: savedBill.totalPrice,
-                lang: "vi",
-                extraData: "",
-                ipnUrl: `${process.env.BACK_END_ADDR}/order/confirm`,
                 orderId: savedBill.id,
                 orderInfo: "Pay with momo",
-                redirectUrl: `${process.env.FRONT_END_ADDR}/${process.env.FRONE_END_REDIRECT_PATH}`,
-                requestId: savedBill.id,
-                requestType: "captureWallet"
+                redirectUrl: redirectUrl,
+                ipnUrl: `${process.env.BACK_END_ADDR}/order/confirm`,
+                requestType: "captureWallet",
+                extraData: "",
+                lang: "vi",
             });
 
             let payUrl = null, deeplink = null, qrCodeUrl = null;
 
             if (!initMomoPayment) {
-                warning.push("Failed to request momo payment");
-            } else {
-                payUrl = initMomoPayment.payUrl;
-                deeplink = initMomoPayment.deeplink;
-                qrCodeUrl = initMomoPayment.qrCodeUrl;
+                res.status(400).json({
+                    message: "Failed to create payment",
+                });
+
+                await ordersRepository.remove(savedOrders);
+                await billRepository.remove(savedBill);
+
+                return;
             }
+
+            if (curUser && discount) {
+                curUser.discounts.push(discount);
+
+                await userRepository.save(curUser);
+            }
+
+            payUrl = initMomoPayment.payUrl;
+            deeplink = initMomoPayment.deeplink;
+            qrCodeUrl = initMomoPayment.qrCodeUrl;
 
             res.status(200).json({
                 message: "Add order success",
@@ -247,7 +278,7 @@ class OrdersController {
 	async paymentResult(req: Request, res: Response): Promise<void> {
 		const { orderId, resultCode, transId } = req.body;
 
-		const isValidSignature = verifySignature(req.body);
+		const isValidSignature = verifySinglePaySignature(req.body);
 		if (!isValidSignature) {
 			res.status(400).json({ message: "Invalid signature" });
 			return;

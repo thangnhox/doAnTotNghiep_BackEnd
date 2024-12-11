@@ -2,14 +2,15 @@ import { Request, Response } from 'express';
 import { User } from '../models/entities/User';
 import { AppDataSource } from '../models/repository/Datasource';
 import { MembershipRecord } from '../models/entities/MembershipRecord';
-import { checkReqUser, getDateFromToday, getValidatedPageInfo, sortValidator } from '../util/checker';
+import { checkReqUser, getDateFromToday, getValidatedPageInfo, isValidUrl, sortValidator } from '../util/checker';
 import { Membership } from '../models/entities/Membership';
 import { Subscribe } from '../models/entities/Subscribe';
 import { v4 as uuidv4 } from 'uuid';
 import { Discount } from '../models/entities/Discount';
-import { decrypt, rsaEncrypt, verifySignature } from '../util/momo';
-import { getSubscriptionToken, initPayment, manageSubscription, membershipPayment } from '../services/momo';
+import { decrypt, Frequency_Number, Frequency_String, rsaEncrypt, verifySubscriptionSignature } from '../util/momo';
+import { getSubscriptionToken, singlePayAPI, manageSubscription, membershipPayment, initSubscriptionAPI } from '../services/momo';
 import { sendMail } from '../services/email';
+import Logger from '../util/logger';
 
 class MembershipController {
     async isValidUser(user: User): Promise<Membership | null> {
@@ -171,12 +172,19 @@ class MembershipController {
 
         const warning: string[] = [];
         let discountStatus: number = -1;
+        let discount: Discount | null = null;
+        let curUser: User | null = null;
 
         try {
-            const { membershipId, discountId } = req.body;
+            const { membershipId, discountId, redirectUrl } = req.body;
 
-            if (!membershipId) {
+            if (!membershipId || !redirectUrl) {
                 res.status(400).json({ message: "Invalid request" });
+                return;
+            }
+
+            if (!isValidUrl(redirectUrl)) {
+                res.status(400).json({ message: "Invalid url" });
                 return;
             }
 
@@ -231,8 +239,8 @@ class MembershipController {
                         warning.push(`${user.name} already used ${foundDiscount.name}`);
                         subscribe.totalPrice = existsMembership.price;
                     } else {
-                        user.discounts.push(foundDiscount);
-                        await userRepository.save(user);
+                        curUser = user;
+                        discount = foundDiscount;
                         subscribe.discountId = foundDiscount.id;
                         discountStatus = foundDiscount.id;
                         subscribe.totalPrice = existsMembership.price - (existsMembership.price * foundDiscount.ratio);
@@ -244,31 +252,49 @@ class MembershipController {
 
             subscribe.date = (new Date()).toISOString().split('T')[0];
 
-            const toDatabase = subscribeRepository.create(subscribe);
-            await subscribeRepository.save(toDatabase);
-
-            const initMomoPayment = await initPayment({
+            const initMomoPayment = await initSubscriptionAPI({
                 partnerCode: process.env.MOMO_PARTNER_CODE as string,
-                amount: subscribe.totalPrice,
-                lang: "vi",
-                extraData: "",
-                ipnUrl: `${process.env.BACK_END_ADDR}/membership/confSubscription`,
-                orderId: subscribe.id,
-                orderInfo: "Pay with momo",
-                redirectUrl: `${process.env.FRONT_END_ADDR}/${process.env.FRONE_END_REDIRECT_PATH}`,
                 requestId: subscribe.id,
-                requestType: "captureWallet"
+                amount: subscribe.totalPrice,
+                orderId: subscribe.id,
+                orderInfo: `${existsMembership}`,
+                redirectUrl: redirectUrl,
+                ipnUrl: `${process.env.BACK_END_ADDR}/membership/confSubscription`,
+                partnerClientId: `${req.user.id}`,
+                extraData: "",
+                requestType: "subscription",
+                subscriptionInfo: {
+                    name: existsMembership.name,
+                    expiryDate: getDateFromToday(Frequency_Number.MONTHLY),
+                    frequency: Frequency_String.MONTHLY,
+                    nextPaymentDate: getDateFromToday(Frequency_Number.MONTHLY),
+                    partnerSubsId: `${existsMembership.id}`,
+                    type: "VARIABLE",
+                    recurringAmount: existsMembership.price * 2,
+                    subsOwner: req.user.name
+                },
+                lang: "vi"
             });
 
             let payUrl = null, deeplink = null, qrCodeUrl = null;
 
             if (!initMomoPayment) {
-                warning.push("Failed to request momo payment");
-            } else {
-                payUrl = initMomoPayment.payUrl;
-                deeplink = initMomoPayment.deeplink;
-                qrCodeUrl = initMomoPayment.qrCodeUrl;
+                res.status(400).json({ message: "Failed to create payment" });
+                return;
             }
+
+            const toDatabase = subscribeRepository.create(subscribe);
+            await subscribeRepository.save(toDatabase);
+
+            if (curUser && discount) {
+                curUser.discounts.push(discount);
+
+                await userRepository.save(curUser);
+            }
+
+            payUrl = initMomoPayment.payUrl;
+            deeplink = initMomoPayment.deeplink;
+            qrCodeUrl = initMomoPayment.qrCodeUrl;
 
             res.status(200).json({
                 message: "Init subscription success",
@@ -297,10 +323,12 @@ class MembershipController {
 
     async paymentConfirm(req: Request, res: Response): Promise<void> {
         try {
-            if (!verifySignature(req.body)) {
+            if (!verifySubscriptionSignature(req.body)) {
                 res.status(400).json({ message: "Invalid request" });
                 return;
             }
+
+            res.status(204).send();
 
             const { partnerCode, callbackToken, requestId, orderId, partnerClientId, transId } = req.body;
             const lang: string = "vi";
@@ -310,14 +338,12 @@ class MembershipController {
 
             if (!subscribe) {
                 console.error("Unexpected deletion of subscription", orderId);
-                res.status(204).send();
                 return;
             }
 
             subscribe.transId = transId;
             await subscribeRepository.save(subscribe);
 
-            res.status(204).send();
 
             const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
 
@@ -345,6 +371,8 @@ class MembershipController {
     }
 
     async autoRenewMembership(): Promise<void> {
+        const logger = Logger.getInstance();
+
         const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
         const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
         const subscribeRepository = (await AppDataSource.getInstance()).getRepository(Subscribe);
@@ -356,15 +384,20 @@ class MembershipController {
 
         for (const record of checkRecords) {
             try {
+                logger.info(`Start auto renew check for [${record.user.id}]: [${record.user.name}]`);
                 if (!record.token || !record.partnerClientId) {
-                    await membershipRecordRepository.remove(record);
+                    logger.warn(`[${record.user.id}]: [${record.user.name}] auto renew has been turned of`);
+                    Promise.all([
+                        membershipRecordRepository.remove(record),
+                        sendMail(record.user.email, "Your subscription expired")
+                    ])
                     continue;
                 }
 
                 const membership = await membershipRepository.findOne({ where: { id: record.membershipId } });
 
                 if (!membership) {
-                    console.error("Failed to get membership info, membership no longer exists in database");
+                    logger.error("Failed to get membership info, membership no longer exists in database");
                     continue;
                 }
 
@@ -396,21 +429,32 @@ class MembershipController {
                 });
 
                 if (!paymentResponse) {
-                    console.error("Failed to request payment");
+                    logger.error("Failed to request payment, extend expire date to next day");
                     record.expireDate = getDateFromToday(1);
                     await membershipRecordRepository.save(record);
                 } else {
-
-                    // TODO: Deal with failed transaction
-                    console.log(`Log for auto renew of ${record.userId}`);
-                    console.log("Transaction result:", paymentResponse);
+                    logger.info("Transaction result:", paymentResponse);
 
                     if (paymentResponse.resultCode === 0) {
+                        logger.info("Transaction success");
+
+                        record.expireDate = formattedDate;
+                        await membershipRecordRepository.save(record);
+
                         newSubscription.transId = paymentResponse.transId;
-                        await sendMail(record.user.email, "Your subscription has been renewed");
+                        await Promise.all([
+                            sendMail(record.user.email, "Your subscription has been renewed"),
+                            subscribeRepository.save(newSubscription)
+                        ]);
+                    } else {
+                        logger.warn("Transaction failed:", paymentResponse.message);
+
+                        await Promise.all([
+                            sendMail(record.user.email, "Auto renew subscription failed, please renew your subscription manually"),
+                            membershipRecordRepository.remove(record)
+                        ]);
                     }
 
-                    await subscribeRepository.save(newSubscription);
                 }
             } catch (error) {
                 console.error("Error while renew membership", error);
