@@ -9,7 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { verifySinglePaySignature } from "../util/momo";
 import { sendMail } from '../services/email';
 import { singlePayAPI } from '../services/momo';
-import { isValidUrl } from '../util/checker';
+import { getValidatedPageInfo, isValidUrl } from '../util/checker';
+import { IsNull, Not } from 'typeorm';
 
 class OrdersController {
     async IsPurcharged(user: User, book: Books): Promise<boolean> {
@@ -305,6 +306,43 @@ class OrdersController {
 			console.error('Error handling IPN:', error);
 		}
 	}
+
+    async boughtBooks(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+    
+        try {
+            const ordersRepository = (await AppDataSource.getInstance()).getRepository(Orders);
+
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+    
+            // Query to find orders by userId, where billId is not null, and bill's paymentDate is not null
+            const [orders, total] = await ordersRepository.createQueryBuilder("orders")
+                .innerJoinAndSelect("orders.bill", "bill")
+                .innerJoinAndSelect("orders.books", "books")
+                .where("orders.userId = :userId", { userId: req.user.id })
+                .andWhere("orders.billId IS NOT NULL")
+                .andWhere("bill.paymentDate IS NOT NULL")
+                // .select(["books.id", "books.title"])
+                .skip(offset)
+                .take(pageSize)
+                .getManyAndCount();
+    
+            // Extract book details
+            const boughtBooks = orders.map(order => ({
+                bookId: order.books.id,
+                bookName: order.books.title
+            }));
+    
+            res.status(200).json({ message: "Success", data: boughtBooks, total, page, pageSize });
+        } catch (error) {
+            console.error("Error while fetching bought books:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
+    
 }
 
 export default new OrdersController;

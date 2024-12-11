@@ -1,10 +1,8 @@
 import "reflect-metadata";
-import { Column, Entity, Index, JoinColumn, ManyToOne, ValueTransformer } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne } from "typeorm";
 import { User } from "./User";
 import { Books } from "./Books";
-import { Discount } from "./Discount";
 import { Bill } from "./Bill";
-import { decimalTransformer } from "../../util/dataTransform";
 
 @Index("BooksID", ["booksId"], {})
 @Index("BillID", ["billId"], {})
