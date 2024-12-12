@@ -20,7 +20,7 @@ export class BookDetails {
     Price!: number;
 
     @ViewColumn()
-    file_url!: string;
+    rank!: number;
 
     @ViewColumn()
     cover_url!: string;
@@ -48,7 +48,7 @@ export class BookDetails {
 
     static readonly validSortColumn = Object.freeze([
         'BookID', 'Title', 'Description', 'PageCount', 'Price',
-        'file_url', 'cover_url', 'status', 'PublishDate',
+        'rank', 'cover_url', 'status', 'PublishDate',
         'IsRecommended', 'PublisherName', 'AuthorName',
         'Categories', 'LikesCount'
     ]);

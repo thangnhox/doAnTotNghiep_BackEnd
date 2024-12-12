@@ -190,7 +190,7 @@ SELECT
     b.Description,
     b.PageCount,
     b.Price,
-    b.file_url,
+    b.Rank,
     b.cover_url,
     b.status,
     b.PublishDate,
