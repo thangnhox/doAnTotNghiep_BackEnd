@@ -91,21 +91,15 @@ class OrdersController {
         }
 
         try {
-            const { bookIds, discountId, redirectUrl } = req.body;
+            const { bookIds, discountId } = req.body;
 
-            if (!redirectUrl || !bookIds) {
+            if (!bookIds) {
                 res.status(400).json({ 
                     message: "Missing required field",
                     data: { 
                         bookIds: !bookIds ? true : false,
-                        redirectUrl: !redirectUrl ? true : false,
                     }
                 });
-                return;
-            }
-
-            if (!isValidUrl(redirectUrl)) {
-                res.status(400).json({ message: "Invalid url" });
                 return;
             }
 
@@ -223,7 +217,7 @@ class OrdersController {
                 amount: savedBill.totalPrice,
                 orderId: savedBill.id,
                 orderInfo: "Pay with momo",
-                redirectUrl: redirectUrl,
+                redirectUrl: `${process.env.FRONT_END_ADDR}${process.env.FRONE_END_REDIRECT_PATH}`,
                 ipnUrl: `${process.env.BACK_END_ADDR}/order/confirm`,
                 requestType: "captureWallet",
                 extraData: "",

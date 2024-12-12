@@ -176,15 +176,10 @@ class MembershipController {
         let curUser: User | null = null;
 
         try {
-            const { membershipId, discountId, redirectUrl } = req.body;
+            const { membershipId, discountId } = req.body;
 
-            if (!membershipId || !redirectUrl) {
+            if (!membershipId) {
                 res.status(400).json({ message: "Invalid request" });
-                return;
-            }
-
-            if (!isValidUrl(redirectUrl)) {
-                res.status(400).json({ message: "Invalid url" });
                 return;
             }
 
@@ -258,7 +253,7 @@ class MembershipController {
                 amount: subscribe.totalPrice,
                 orderId: subscribe.id,
                 orderInfo: `${existsMembership}`,
-                redirectUrl: redirectUrl,
+                redirectUrl: `${process.env.FRONT_END_ADDR}${process.env.FRONE_END_REDIRECT_PATH}`,
                 ipnUrl: `${process.env.BACK_END_ADDR}/membership/confSubscription`,
                 partnerClientId: `${req.user.id}`,
                 extraData: "",
