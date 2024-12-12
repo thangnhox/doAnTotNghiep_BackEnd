@@ -327,7 +327,9 @@ class OrdersController {
             // Extract book details
             const boughtBooks = orders.map(order => ({
                 bookId: order.books.id,
-                bookName: order.books.title
+                title: order.books.title,
+                cover_url: order.books.coverUrl,
+                description: order.books.description,
             }));
     
             res.status(200).json({ message: "Success", data: boughtBooks, total, page, pageSize });
