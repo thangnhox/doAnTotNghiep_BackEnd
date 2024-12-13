@@ -14,6 +14,9 @@ export class Authors {
     @PrimaryGeneratedColumn({ type: "int", name: "ID" })
     id!: number;
 
+    @Column("varchar", { name: "Avatar", nullable: true, length: 255 })
+    avatar!: string | null;
+
     @Column("varchar", { name: "Name", length: 255 })
     name!: string;
 

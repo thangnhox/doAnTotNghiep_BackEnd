@@ -11,6 +11,7 @@ import { sendMail } from '../services/email';
 import { singlePayAPI } from '../services/momo';
 import { getValidatedPageInfo, isValidUrl } from '../util/checker';
 import { IsNull, Not } from 'typeorm';
+import Logger from '../util/logger';
 
 class OrdersController {
     async IsPurcharged(user: User, book: Books): Promise<boolean> {
@@ -21,11 +22,11 @@ class OrdersController {
 
             if (!confirm || !confirm.billId) return false;
 
-			const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
+            const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
 
-			const bill = await billRepository.findOne({ where: { id: confirm.billId } });
+            const bill = await billRepository.findOne({ where: { id: confirm.billId } });
 
-			if (!bill || !bill.paymentDate) return false;
+            if (!bill || !bill.paymentDate) return false;
 
             return true;
 
@@ -65,12 +66,12 @@ class OrdersController {
                 return;
             }
 
-			const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
-			const bill = await billRepository.findOne({ where: { id: purcharged.billId } });
-			if (!bill || !bill.paymentDate) {
+            const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
+            const bill = await billRepository.findOne({ where: { id: purcharged.billId } });
+            if (!bill || !bill.paymentDate) {
                 res.status(404).json({ message: "Book not purcharged" });
                 return;
-			}
+            }
 
             res.status(200).json({ message: "Book purcharged", data: purcharged });
 
@@ -91,12 +92,12 @@ class OrdersController {
         }
 
         try {
-            const { bookIds, discountId } = req.body;
+            const { bookIds, discountName } = req.body;
 
             if (!bookIds) {
-                res.status(400).json({ 
+                res.status(400).json({
                     message: "Missing required field",
-                    data: { 
+                    data: {
                         bookIds: !bookIds ? true : false,
                     }
                 });
@@ -107,15 +108,15 @@ class OrdersController {
             const ordersRepository = (await AppDataSource.getInstance()).getRepository(Orders);
             const userRepository = (await AppDataSource.getInstance()).getRepository(User);
             const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
-			const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
+            const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
 
-			let billId: string | null = uuidv4();
-			const newBill = new Bill();
-			newBill.id = billId;
-			newBill.userId = req.user.id;
-			newBill.createDate = (new Date).toISOString().split('T')[0];
-			newBill.totalPrice = 0;
-			const savedBill = await billRepository.save(newBill);
+            let billId: string | null = uuidv4();
+            const newBill = new Bill();
+            newBill.id = billId;
+            newBill.userId = req.user.id;
+            newBill.createDate = (new Date).toISOString().split('T')[0];
+            newBill.totalPrice = 0;
+            const savedBill = await billRepository.save(newBill);
 
             const added = [];
             const dupplicated: number[] = [];
@@ -126,13 +127,13 @@ class OrdersController {
             const warning: string[] = [];
             const savedOrders: Orders[] = [];
 
-			let discount: Discount | null = null;
+            let discount: Discount | null = null;
             let curUser: User | null = null;
 
-            if (discountId) {
-                const foundDiscount = await discountRepository.findOne({ where: { id: discountId } });
+            if (discountName) {
+                const foundDiscount = await discountRepository.findOne({ where: { name: discountName } });
                 if (!foundDiscount) {
-                    warning.push(`Discount ${discountId} not found`);
+                    warning.push(`Discount ${discountName} not found`);
                 } else {
                     const user = await userRepository.findOne({ where: { id: req.user.id }, relations: ['discounts'] });
                     if (!user) {
@@ -147,7 +148,7 @@ class OrdersController {
                     } else {
                         curUser = user;
                         savedBill.discountId = foundDiscount.id;
-						discount = foundDiscount;
+                        discount = foundDiscount;
                         discountStatus = foundDiscount.id;
                     }
                 }
@@ -157,7 +158,7 @@ class OrdersController {
                 const existsOrder = await ordersRepository.findOne({ where: { userId: req.user.id, booksId: bookId } });
                 const existsBook = await bookRepository.findOne({ where: { id: bookId } });
                 if (existsOrder) {
-					dupplicated.push(bookId);
+                    dupplicated.push(bookId);
                     continue;
                 }
                 if (!existsBook) {
@@ -174,42 +175,42 @@ class OrdersController {
                 let newOrder = new Orders();
                 newOrder.userId = req.user.id;
                 newOrder.booksId = bookId;
-				newOrder.billId = savedBill.id;
+                newOrder.billId = savedBill.id;
 
                 const toDatabase = ordersRepository.create(newOrder);
                 const savedOrder = await ordersRepository.save(toDatabase);
                 savedOrders.push(savedOrder);
                 added.push({
-					id: existsBook.id,
-					name: existsBook.title,
-					price: existsBook.price,
-				});
+                    id: existsBook.id,
+                    name: existsBook.title,
+                    price: existsBook.price,
+                });
                 totalPrice = totalPrice + existsBook.price;
             }
 
-			if (added.length === 0) {
-				await billRepository.delete(savedBill.id);
-				billId = null;
-				res.status(400).json({ 
-					message: `Failed to create order`,
-					data: {
-						Duplicated: dupplicated,
-						NotExists: notExists,
-						NotSell: notSell,
-					},
-					warning,
-				});
-				return;
-			}
+            if (added.length === 0) {
+                await billRepository.delete(savedBill.id);
+                billId = null;
+                res.status(400).json({
+                    message: `Failed to create order`,
+                    data: {
+                        Duplicated: dupplicated,
+                        NotExists: notExists,
+                        NotSell: notSell,
+                    },
+                    warning,
+                });
+                return;
+            }
 
 
-			if (discount) {
-				savedBill.totalPrice = totalPrice - (totalPrice * discount.ratio);
-			} else {
-				savedBill.totalPrice = totalPrice;
-			}
+            if (discount) {
+                savedBill.totalPrice = totalPrice - (totalPrice * discount.ratio);
+            } else {
+                savedBill.totalPrice = totalPrice;
+            }
 
-			await billRepository.save(savedBill);
+            await billRepository.save(savedBill);
 
             const initMomoPayment = await singlePayAPI({
                 partnerCode: process.env.MOMO_PARTNER_CODE as string,
@@ -250,7 +251,7 @@ class OrdersController {
             res.status(200).json({
                 message: "Add order success",
                 data: {
-					ID: savedBill.id,
+                    ID: savedBill.id,
                     Added: added,
                     Duplicated: dupplicated,
                     NotExists: notExists,
@@ -270,48 +271,70 @@ class OrdersController {
         }
     }
 
-	async paymentResult(req: Request, res: Response): Promise<void> {
-		const { orderId, resultCode, transId } = req.body;
-
-		const isValidSignature = verifySinglePaySignature(req.body);
-		if (!isValidSignature) {
-			res.status(400).json({ message: "Invalid signature" });
-			return;
-		}
+    async paymentResult(req: Request, res: Response): Promise<void> {
+        const { orderId, resultCode, transId, message } = req.body;
+    
+        const logger = Logger.getInstance();
+    
+        const isValidSignature = verifySinglePaySignature(req.body);
+        if (!isValidSignature) {
+            res.status(400).json({ message: "Invalid signature" });
+            return;
+        }
         res.status(204).send();
-
-		try {
-			const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
-
-			if (resultCode === 0) {
-				const bill = await billRepository.findOne({ where: { id: orderId }, relations: ['user'] });
-				if (!bill) {
-                    console.error("Unexpected removal of bill:", orderId);
-					return;
-				}
-
-				bill.paymentDate = (new Date()).toISOString().split('T')[0];
+    
+        try {
+            const dataSource = await AppDataSource.getInstance();
+            const billRepository = dataSource.getRepository(Bill);
+    
+            const bill = await billRepository.findOne({ where: { id: orderId }, relations: ['user', 'orders'] });
+            
+            if (!bill) {
+                logger.error("Unexpected removal of bill:", orderId);
+                return;
+            }
+    
+            if (resultCode === 0) {
+                logger.info(`Bill ${orderId} success`);
+                bill.paymentDate = (new Date()).toISOString().split('T')[0];
                 bill.transId = transId;
-				await billRepository.save(bill);
-                await sendMail(bill.user.email, "Your order has success fully purcharged");
-			}
-
-		} catch (error: any) {
-			console.error('Error handling IPN:', error);
-		}
-	}
+                await billRepository.save(bill);
+                await sendMail(bill.user.email, "Your order has been successfully charged");
+            } else {
+                const ordersRepository = dataSource.getRepository(Orders);
+    
+                logger.warn(`Bill ${orderId} has failed with code ${resultCode}: ${message}`);
+    
+                await sendMail(bill.user.email, "Your order charge failed");
+    
+                if (bill.discount) {
+                    await dataSource
+                        .createQueryBuilder()
+                        .relation(User, 'discounts')
+                        .of(bill.userId)
+                        .remove(bill.discountId);
+                }
+    
+                await ordersRepository.remove(bill.orders);
+                await billRepository.remove(bill);
+            }
+    
+        } catch (error: any) {
+            console.error('Error handling IPN:', error);
+        }
+    }
 
     async boughtBooks(req: Request, res: Response): Promise<void> {
         if (!req.user) {
             res.status(500).json({ message: "Authentication error" });
             return;
         }
-    
+
         try {
             const ordersRepository = (await AppDataSource.getInstance()).getRepository(Orders);
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
-    
+
             // Query to find orders by userId, where billId is not null, and bill's paymentDate is not null
             const [orders, total] = await ordersRepository.createQueryBuilder("orders")
                 .innerJoinAndSelect("orders.bill", "bill")
@@ -323,7 +346,7 @@ class OrdersController {
                 .skip(offset)
                 .take(pageSize)
                 .getManyAndCount();
-    
+
             // Extract book details
             const boughtBooks = orders.map(order => ({
                 bookId: order.books.id,
@@ -331,14 +354,14 @@ class OrdersController {
                 cover_url: order.books.coverUrl,
                 description: order.books.description,
             }));
-    
+
             res.status(200).json({ message: "Success", data: boughtBooks, total, page, pageSize });
         } catch (error) {
             console.error("Error while fetching bought books:", error);
             res.status(500).json({ message: "Server error" });
         }
     }
-    
+
 }
 
 export default new OrdersController;

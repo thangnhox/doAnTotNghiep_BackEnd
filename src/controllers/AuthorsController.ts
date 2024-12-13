@@ -39,6 +39,7 @@ class AuthorsController {
                     return {
                         id: author.id,
                         name: author.name,
+                        avatar: author.avatar,
                         birthDate: author.birthDate,
                         nation: author.nationality,
                         describe: author.description,
@@ -49,6 +50,7 @@ class AuthorsController {
                     return {
                         id: author.id,
                         name: author.name,
+                        avatar: author.avatar,
                         birthDate: author.birthDate,
                         nation: author.nationality,
                         describe: author.description,
@@ -75,7 +77,7 @@ class AuthorsController {
         try {
             const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
 
-            const { name, birthDate, description, nationality } = req.body;
+            const { name, birthDate, description, nationality, avatar } = req.body;
 
             if (!name || !description || !birthDate) {
                 res.status(400).json({ message: "Name and Description are required." });
@@ -93,6 +95,7 @@ class AuthorsController {
             newAuthor.birthDate = (birthDate !== null) ? (new Date(birthDate)).toISOString().split('T')[0] : null;
             newAuthor.description = description;
             newAuthor.nationality = nationality || null;
+            newAuthor.avatar = avatar || null;
 
             const saved = await authorRepository.save(newAuthor);
 
@@ -181,6 +184,7 @@ class AuthorsController {
                     return {
                         id: author.id,
                         name: author.name,
+                        avatar: author.avatar,
                         birthDate: author.birthDate,
                         nation: author.nationality,
                         describe: author.description,
@@ -191,6 +195,7 @@ class AuthorsController {
                     return {
                         id: author.id,
                         name: author.name,
+                        avatar: author.avatar,
                         birthDate: author.birthDate,
                         nation: author.nationality,
                         describe: author.description,
@@ -287,6 +292,7 @@ class AuthorsController {
                     author: {
                         id: author.id,
                         name: author.name,
+                        avatar: author.avatar,
                         birthDate: author.birthDate,
                         nationality: author.nationality,
                         description: author.description,

@@ -37,6 +37,7 @@ CREATE TABLE test_DoAnTotNghiep.Discount (
 
 CREATE TABLE test_DoAnTotNghiep.Authors (
     ID INT AUTO_INCREMENT PRIMARY KEY,
+    Avatar VARCHAR(255) NULL,
     Name VARCHAR(255) NOT NULL,
     BirthDate DATE,
     Nationality VARCHAR(100),

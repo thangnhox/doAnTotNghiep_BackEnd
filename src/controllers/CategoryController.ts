@@ -178,21 +178,41 @@ class CategoryController {
     
             if (detail) {
                 const bookCount = category.books.length;
-                const booklist = category.books.map(book => {
+    
+                // Pagination
+                const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+    
+                // Handle out-of-bound pages
+                if (offset >= bookCount) {
+                    res.status(400).json({ message: "Page out of bounds" });
+                    return;
+                }
+    
+                const paginatedBooks = category.books.slice(offset, offset + pageSize);
+                
+                const booklist = paginatedBooks.map(book => {
                     return {
                         id: book.id,
                         title: book.title,
+                        price: book.price,
+                        coverUrl: book.coverUrl,
+                        totalPage: book.pageCount,
                     };
                 });
-                const booksDisplay = bookCount > 3
-                    ? [...booklist.slice(0, 3), { title: '...more', id: null }]
+    
+                const booksDisplay = bookCount > (page * pageSize)
+                    ? [...booklist, { title: '...more', id: null }]
                     : booklist;
+                
                 res.status(200).json({
-                    message: "Category found", data: {
+                    message: "Category found",
+                    data: {
                         id: category.id,
                         name: category.name,
                         booklist: booksDisplay,
-                        books: bookCount
+                        books: bookCount,
+                        page,
+                        pageSize
                     }
                 });
             } else {
@@ -209,6 +229,7 @@ class CategoryController {
             res.status(500).json({ message: "Failed to fetch category", error: error.message });
         }
     }
+    
 
     async add(req: Request, res: Response): Promise<void> {
         if (!checkReqUser(req, res)) return;

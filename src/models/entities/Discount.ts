@@ -11,6 +11,7 @@ import {
 import { Bill } from "./Bill";
 import { Subscribe } from "./Subscribe";
 import { User } from "./User";
+import { bufferTransformer } from "../../util/dataTransform";
 
 @Index("Name", ["name"], { unique: true })
 @Entity("Discount", { schema: "test_doantotnghiep" })
@@ -27,7 +28,7 @@ export class Discount {
     @Column("date", { name: "Expire_date" })
     expireDate!: string;
 
-    @Column("bit", { name: "Status" })
+    @Column("bit", { name: "Status", transformer: bufferTransformer })
     status!: number;
 
     @OneToMany(() => Bill, (bill) => bill.discount)

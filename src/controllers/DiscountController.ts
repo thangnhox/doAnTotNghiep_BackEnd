@@ -1,34 +1,54 @@
 import { Request, Response } from 'express';
 import { AppDataSource } from '../models/repository/Datasource';
 import { Discount } from '../models/entities/Discount';
-import { checkReqUser, getValidatedPageInfo, sortValidator } from '../util/checker';
+import { checkReqUser, generateRandomString, getValidatedPageInfo, sortValidator } from '../util/checker';
 
 class DiscountController {
     // Insert new discount
     async insertDiscount(req: Request, res: Response): Promise<void> {
         if (!checkReqUser(req, res)) return;
-
+    
         const { name, ratio, expireDate, status } = req.body;
-
+    
+        if (!ratio || !expireDate) {
+            res.status(400).json({ message: "Invalid request" });
+            return;
+        }
+    
         try {
             const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
-
-            // Check if a discount with the same name exists
-            const existingDiscount = await discountRepository.findOne({ where: { name } });
-            if (existingDiscount) {
-                res.status(409).json({ message: 'Discount name already exists', data: existingDiscount });
-                return;
+            let newName: string = name || "";
+    
+            if (name) {
+                // Check if a discount with the same name exists
+                const existingDiscount = await discountRepository.findOne({ where: { name } });
+                if (existingDiscount) {
+                    res.status(409).json({ message: 'Discount name already exists', data: existingDiscount });
+                    return;
+                }
+            } else {
+                // Generate a unique name if not provided
+                do {
+                    newName = generateRandomString();
+                } while (await discountRepository.findOne({ where: { name: newName } }));
             }
-
-            const newDiscount = discountRepository.create({ name, ratio, expireDate: (new Date(expireDate)).toISOString().split('T')[0], status });
+    
+            const newDiscount = discountRepository.create({
+                name: newName,
+                ratio,
+                expireDate: new Date(expireDate).toISOString().split('T')[0],
+                status: status || 1
+            });
+    
             const insertedDiscount = await discountRepository.save(newDiscount);
-
-            res.status(201).json({ message: "insert success", data: insertedDiscount});
+    
+            res.status(201).json({ message: "Insert success", data: insertedDiscount });
         } catch (error) {
             console.error('Error inserting discount:', error);
             res.status(500).json({ message: 'Server error' });
         }
     }
+    
 
     // Edit an existing discount
     async editDiscount(req: Request, res: Response): Promise<void> {
@@ -97,7 +117,7 @@ class DiscountController {
                 }
             });
 
-            res.status(200).json({ 
+            res.status(200).json({
                 message: "fetch success",
                 data: discounts,
                 total,
