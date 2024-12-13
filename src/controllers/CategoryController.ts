@@ -183,7 +183,7 @@ class CategoryController {
                 const { page, pageSize, offset } = getValidatedPageInfo(req.query);
     
                 // Handle out-of-bound pages
-                if (offset >= bookCount) {
+                if (offset >= bookCount && bookCount > 0) {
                     res.status(400).json({ message: "Page out of bounds" });
                     return;
                 }
