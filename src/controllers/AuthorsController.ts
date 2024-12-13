@@ -41,8 +41,8 @@ class AuthorsController {
                         name: author.name,
                         avatar: author.avatar,
                         birthDate: author.birthDate,
-                        nation: author.nationality,
-                        describe: author.description,
+                        nationality: author.nationality,
+                        description: author.description,
                         booklist: booksDisplay,
                         books: bookCount
                     };
@@ -52,8 +52,8 @@ class AuthorsController {
                         name: author.name,
                         avatar: author.avatar,
                         birthDate: author.birthDate,
-                        nation: author.nationality,
-                        describe: author.description,
+                        nationality: author.nationality,
+                        description: author.description,
                         books: author.books.length
                     };
                 }
@@ -186,8 +186,8 @@ class AuthorsController {
                         name: author.name,
                         avatar: author.avatar,
                         birthDate: author.birthDate,
-                        nation: author.nationality,
-                        describe: author.description,
+                        nationality: author.nationality,
+                        description: author.description,
                         booklist: booksDisplay,
                         books: bookCount
                     };
@@ -197,8 +197,8 @@ class AuthorsController {
                         name: author.name,
                         avatar: author.avatar,
                         birthDate: author.birthDate,
-                        nation: author.nationality,
-                        describe: author.description,
+                        nationality: author.nationality,
+                        description: author.description,
                         books: author.books.length
                     };
                 }
