@@ -29,11 +29,11 @@ class AuthorsController {
                     const bookCount = author.books.length;
                     const booklist = author.books.map(book => {
                         return {
-                            id: book.id,
-                            title: book.title,
-                            price: book.price,
-                            coverUrl: book.coverUrl,
-                            pageCount: book.pageCount,
+                            BookID: book.id,
+                            Title: book.title,
+                            Price: book.price,
+                            cover_url: book.coverUrl,
+                            PageCount: book.pageCount,
                         };
                     });
                     const booksDisplay = bookCount > 3
@@ -177,11 +177,11 @@ class AuthorsController {
                     const bookCount = author.books.length;
                     const booklist = author.books.map(book => {
                         return {
-                            id: book.id,
-                            title: book.title,
-                            price: book.price,
-                            coverUrl: book.coverUrl,
-                            pageCount: book.pageCount,
+                            BookID: book.id,
+                            Title: book.title,
+                            Price: book.price,
+                            cover_url: book.coverUrl,
+                            PageCount: book.pageCount,
                         };
                     });
                     const booksDisplay = bookCount > 3
@@ -283,7 +283,7 @@ class AuthorsController {
 
             const formattedBooks = books.map(book => {
                 return {
-                    id: book.id,
+                    BookID: book.id,
                     title: book.title,
                     price: book.price,
                     coverUrl: book.coverUrl,

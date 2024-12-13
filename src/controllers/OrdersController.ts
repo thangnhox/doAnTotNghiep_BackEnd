@@ -273,27 +273,27 @@ class OrdersController {
 
     async paymentResult(req: Request, res: Response): Promise<void> {
         const { orderId, resultCode, transId, message } = req.body;
-    
+
         const logger = Logger.getInstance();
-    
+
         const isValidSignature = verifySinglePaySignature(req.body);
         if (!isValidSignature) {
             res.status(400).json({ message: "Invalid signature" });
             return;
         }
         res.status(204).send();
-    
+
         try {
             const dataSource = await AppDataSource.getInstance();
             const billRepository = dataSource.getRepository(Bill);
-    
+
             const bill = await billRepository.findOne({ where: { id: orderId }, relations: ['user', 'orders'] });
-            
+
             if (!bill) {
                 logger.error("Unexpected removal of bill:", orderId);
                 return;
             }
-    
+
             if (resultCode === 0) {
                 logger.info(`Bill ${orderId} success`);
                 bill.paymentDate = (new Date()).toISOString().split('T')[0];
@@ -302,11 +302,11 @@ class OrdersController {
                 await sendMail(bill.user.email, "Your order has been successfully charged");
             } else {
                 const ordersRepository = dataSource.getRepository(Orders);
-    
+
                 logger.warn(`Bill ${orderId} has failed with code ${resultCode}: ${message}`);
-    
+
                 await sendMail(bill.user.email, "Your order charge failed");
-    
+
                 if (bill.discount) {
                     await dataSource
                         .createQueryBuilder()
@@ -314,11 +314,11 @@ class OrdersController {
                         .of(bill.userId)
                         .remove(bill.discountId);
                 }
-    
+
                 await ordersRepository.remove(bill.orders);
                 await billRepository.remove(bill);
             }
-    
+
         } catch (error: any) {
             console.error('Error handling IPN:', error);
         }
@@ -349,10 +349,11 @@ class OrdersController {
 
             // Extract book details
             const boughtBooks = orders.map(order => ({
-                bookId: order.books.id,
-                title: order.books.title,
+                BookID: order.books.id,
+                Title: order.books.title,
+                Price: order.books.price,
                 cover_url: order.books.coverUrl,
-                description: order.books.description,
+                PageCount: order.books.pageCount,
             }));
 
             res.status(200).json({ message: "Success", data: boughtBooks, total, page, pageSize });

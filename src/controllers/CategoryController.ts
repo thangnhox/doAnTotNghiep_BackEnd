@@ -28,8 +28,11 @@ class CategoryController {
                     const bookCount = category.books.length;
                     const booklist = category.books.map(book => {
                         return {
-                            id: book.id,
-                            title: book.title,
+                            BookID: book.id,
+                            Title: book.title,
+                            Price: book.price,
+                            cover_url: book.coverUrl,
+                            PageCount: book.pageCount,
                         };
                     });
                     const booksDisplay = bookCount > 3
@@ -50,7 +53,7 @@ class CategoryController {
                 }
             });
 
-            res.status(200).json({ 
+            res.status(200).json({
                 message: "fetch success",
                 data: formattedCategories,
                 total,
@@ -69,24 +72,27 @@ class CategoryController {
             const { name } = req.params;
             const exact = req.query.exact === 'true';
             const detail = req.query.detail === 'true';
-    
+
             if (exact) {
                 const category = await categoryRepository.findOne({
                     where: { name },
                     relations: ['books']
                 });
-    
+
                 if (!category) {
                     res.status(404).json({ message: "Category not found" });
                     return;
                 }
-    
+
                 if (detail) {
                     const bookCount = category.books.length;
                     const booklist = category.books.map(book => {
                         return {
-                            id: book.id,
-                            title: book.title,
+                            BookID: book.id,
+                            Title: book.title,
+                            Price: book.price,
+                            cover_url: book.coverUrl,
+                            PageCount: book.pageCount,
                         };
                     });
                     const booksDisplay = bookCount > 3
@@ -112,27 +118,30 @@ class CategoryController {
                 }
             } else {
                 const { page, pageSize, offset } = getValidatedPageInfo(req.query);
-    
+
                 const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Category);
-    
+
                 const [categories, total] = await categoryRepository.createQueryBuilder("category")
                     .leftJoinAndSelect("category.books", "book")
                     .where("category.name LIKE :name", { name: `%${name}%` })
                     .orderBy(`category.${sort}`, order.toUpperCase() as 'ASC' | 'DESC')
                     .skip(offset).take(pageSize).getManyAndCount();
-    
+
                 if (categories.length === 0) {
                     res.status(404).json({ message: "No categories found" });
                     return;
                 }
-    
+
                 const formattedCategories = categories.map(category => {
                     if (detail) {
                         const bookCount = category.books.length;
                         const booklist = category.books.map(book => {
                             return {
-                                id: book.id,
-                                title: book.title,
+                                BookID: book.id,
+                                Title: book.title,
+                                Price: book.price,
+                                cover_url: book.coverUrl,
+                                PageCount: book.pageCount,
                             };
                         });
                         const booksDisplay = bookCount > 3
@@ -152,7 +161,7 @@ class CategoryController {
                         }
                     }
                 });
-    
+
                 res.status(200).json({ message: "Categories found", data: formattedCategories, total, page, pageSize, warnings });
             }
         } catch (error: any) {
@@ -165,45 +174,45 @@ class CategoryController {
             const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
             const { id } = req.params;
             const detail = req.query.detail === 'true';
-    
+
             const category = await categoryRepository.findOne({
                 where: { id: Number(id) },
                 relations: ['books']
             });
-    
+
             if (!category) {
                 res.status(404).json({ message: "Category not found" });
                 return;
             }
-    
+
             if (detail) {
                 const bookCount = category.books.length;
-    
+
                 // Pagination
                 const { page, pageSize, offset } = getValidatedPageInfo(req.query);
-    
+
                 // Handle out-of-bound pages
                 if (offset >= bookCount && bookCount > 0) {
                     res.status(400).json({ message: "Page out of bounds" });
                     return;
                 }
-    
+
                 const paginatedBooks = category.books.slice(offset, offset + pageSize);
-                
+
                 const booklist = paginatedBooks.map(book => {
                     return {
-                        id: book.id,
-                        title: book.title,
-                        price: book.price,
-                        coverUrl: book.coverUrl,
-                        totalPage: book.pageCount,
+                        BookID: book.id,
+                        Title: book.title,
+                        Price: book.price,
+                        cover_url: book.coverUrl,
+                        PageCount: book.pageCount,
                     };
                 });
-    
+
                 const booksDisplay = bookCount > (page * pageSize)
                     ? [...booklist, { title: '...more', id: null }]
                     : booklist;
-                
+
                 res.status(200).json({
                     message: "Category found",
                     data: {
@@ -229,7 +238,7 @@ class CategoryController {
             res.status(500).json({ message: "Failed to fetch category", error: error.message });
         }
     }
-    
+
 
     async add(req: Request, res: Response): Promise<void> {
         if (!checkReqUser(req, res)) return;
