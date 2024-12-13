@@ -121,6 +121,10 @@ class ReadHistoryController {
                 return;
             }
 
+            if (progress.lastRead === currentPage) {
+                return;
+            }
+            
             progress.lastRead = currentPage;
             
             if (currentPage > progress.progress) {
