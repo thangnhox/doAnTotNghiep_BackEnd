@@ -105,26 +105,69 @@ class ReadHistoryController {
         }
     }
 
-    async updateProgress(userId: number, booksId: number, currentPage: number): Promise<void> {
+    // async updateProgress(userId: number, booksId: number, currentPage: number): Promise<void> {
+    //     try {
+    //         const readHistoryRepository = (await AppDataSource.getInstance()).getRepository(ReadHistory);
+    //         const progress = await readHistoryRepository.findOne({ where: { userId, booksId } });
+
+    //         if (!progress) {
+    //             const newHistory = new ReadHistory();
+    //             newHistory.booksId = booksId;
+    //             newHistory.userId = userId;
+    //             newHistory.progress = currentPage;
+    //             newHistory.lastRead = currentPage;
+
+    //             await readHistoryRepository.save(newHistory);
+    //             return;
+    //         }
+
+    //         if (progress.lastRead === currentPage) {
+    //             return;
+    //         }
+
+    //         progress.lastRead = currentPage;
+            
+    //         if (currentPage > progress.progress) {
+    //             progress.progress = currentPage;
+    //         }
+
+    //         await readHistoryRepository.save(progress);
+
+    //     } catch (error) {
+    //         console.error("Error while update read history of book:", error);
+    //     }
+    // }
+
+    async updateProgress(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+
         try {
+            const { id, page } = req.params;
+            const booksId = Number(id);
+            const currentPage = Number(page);
             const readHistoryRepository = (await AppDataSource.getInstance()).getRepository(ReadHistory);
-            const progress = await readHistoryRepository.findOne({ where: { userId, booksId } });
+            const progress = await readHistoryRepository.findOne({ where: { userId: req.user.id, booksId } });
 
             if (!progress) {
                 const newHistory = new ReadHistory();
                 newHistory.booksId = booksId;
-                newHistory.userId = userId;
+                newHistory.userId = req.user.id;
                 newHistory.progress = currentPage;
                 newHistory.lastRead = currentPage;
 
                 await readHistoryRepository.save(newHistory);
+                res.status(201).json({ message: "New history created" });
                 return;
             }
 
             if (progress.lastRead === currentPage) {
+                res.status(204).send();
                 return;
             }
-            
+
             progress.lastRead = currentPage;
             
             if (currentPage > progress.progress) {
@@ -132,9 +175,11 @@ class ReadHistoryController {
             }
 
             await readHistoryRepository.save(progress);
+            res.status(200).json({ message: "Update history success" });
 
         } catch (error) {
             console.error("Error while update read history of book:", error);
+            res.status(500).json({ message: "Server error" });
         }
     }
 

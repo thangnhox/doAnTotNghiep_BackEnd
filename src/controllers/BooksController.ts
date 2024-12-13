@@ -239,7 +239,7 @@ class BooksController {
 
             fs.createReadStream(image.path as string).pipe(res);
 
-            await ReadHistoryController.updateProgress(req.user.id, book.id, page);
+            // await ReadHistoryController.updateProgress(req.user.id, book.id, page);
 
         } catch (error: any) {
             console.error(error);
