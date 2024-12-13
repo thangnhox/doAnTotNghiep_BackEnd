@@ -31,6 +31,9 @@ class AuthorsController {
                         return {
                             id: book.id,
                             title: book.title,
+                            price: book.price,
+                            coverUrl: book.coverUrl,
+                            pageCount: book.pageCount,
                         };
                     });
                     const booksDisplay = bookCount > 3
@@ -176,6 +179,9 @@ class AuthorsController {
                         return {
                             id: book.id,
                             title: book.title,
+                            price: book.price,
+                            coverUrl: book.coverUrl,
+                            pageCount: book.pageCount,
                         };
                     });
                     const booksDisplay = bookCount > 3
@@ -251,7 +257,7 @@ class AuthorsController {
 
     async getAuthorInfo(req: Request, res: Response): Promise<void> {
         const { id } = req.params;
-        
+
         try {
             const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
             const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
@@ -279,10 +285,10 @@ class AuthorsController {
                 return {
                     id: book.id,
                     title: book.title,
-                    description: book.description,
-                    pageCount: book.pageCount,
                     price: book.price,
-                    cover: book.coverUrl
+                    coverUrl: book.coverUrl,
+                    pageCount: book.pageCount,
+                    description: book.description,
                 }
             });
 
