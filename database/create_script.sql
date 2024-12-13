@@ -183,6 +183,17 @@ CREATE TABLE test_DoAnTotNghiep.BookRequest (
     INDEX (Title)
 );
 
+CREATE TABLE test_DoAnTotNghiep.ReadHistory (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    BooksID INT NOT NULL,
+    LastRead INT NOT NULL,
+    Progress INT NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
+    FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID),
+    UNIQUE (UserID, BooksID)
+);
+
 
 CREATE VIEW test_DoAnTotNghiep.BookDetails AS
 SELECT 

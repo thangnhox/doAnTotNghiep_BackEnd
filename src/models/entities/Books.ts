@@ -17,6 +17,7 @@ import { TagsBooks } from "./TagsBooks";
 import { Category } from "./Category";
 import { User } from "./User";
 import { decimalTransformer, bufferTransformer } from "../../util/dataTransform";
+import { ReadHistory } from "./ReadHistory";
 
 @Index("Title", ["title"], {})
 @Index("PublisherID", ["publisherId"], {})
@@ -68,6 +69,9 @@ export class Books {
 
     @OneToMany(() => Notes, (notes) => notes.books)
     notes!: Notes[];
+
+    @OneToMany(() => ReadHistory, (readHistory) => readHistory.books)
+    readHistories!: ReadHistory[];
 
     @ManyToOne(() => Authors, (authors) => authors.books, {
         onDelete: "RESTRICT",

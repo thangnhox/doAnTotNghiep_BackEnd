@@ -17,6 +17,7 @@ import { MembershipRecord } from "./MembershipRecord";
 import { Books } from "./Books";
 import { BookRequest } from "./BookRequest";
 import { Bill } from "./Bill";
+import { ReadHistory } from "./ReadHistory";
 
 @Index("Email", ["email"], { unique: true })
 @Entity("User", { schema: "test_doantotnghiep" })
@@ -59,6 +60,9 @@ export class User {
 
     @ManyToMany(() => Discount, (discount) => discount.users)
     discounts!: Discount[];
+
+    @OneToMany(() => ReadHistory, (readHistory) => readHistory.user)
+    readHistories!: ReadHistory[];
 
     @OneToMany(
         () => MembershipRecord,

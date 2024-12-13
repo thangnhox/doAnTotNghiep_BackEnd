@@ -12,6 +12,7 @@ import fs from 'fs';
 import MembershipController from './MembershipController';
 import OrderaController from './OrdersController';
 import OrdersController from './OrdersController';
+import ReadHistoryController from './ReadHistoryController';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
@@ -237,6 +238,8 @@ class BooksController {
             res.setHeader('Content-Type', 'image/png');
 
             fs.createReadStream(image.path as string).pipe(res);
+
+            await ReadHistoryController.updateProgress(req.user.id, book.id, page);
 
         } catch (error: any) {
             console.error(error);

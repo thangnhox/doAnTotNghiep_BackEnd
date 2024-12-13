@@ -16,6 +16,7 @@ import { TagsBooks } from "../entities/TagsBooks";
 import { BookDetails } from "../views/BookDetails";
 import { Bill } from "../entities/Bill";
 import { TagsNotes } from "../entities/TagsNotes";
+import { ReadHistory } from "../entities/ReadHistory";
 
 function createAppDataSource(): DataSource {
     return new DataSource({
@@ -27,7 +28,7 @@ function createAppDataSource(): DataSource {
         database: process.env.DB_NAME,
         synchronize: false,
         logging: true,
-        entities: [BookRequest, Books, Category, Discount, Membership, MembershipRecord, Notes, Orders, Publisher, Subscribe, User, Authors, Tags, TagsBooks, BookDetails, Bill, TagsNotes],
+        entities: [BookRequest, Books, Category, Discount, Membership, MembershipRecord, Notes, Orders, Publisher, Subscribe, User, Authors, Tags, TagsBooks, BookDetails, Bill, TagsNotes, ReadHistory],
         migrations: [],
         subscribers: [],
         connectionTimeout: 15000,
