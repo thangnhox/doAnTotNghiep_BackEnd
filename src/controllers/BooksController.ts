@@ -12,7 +12,6 @@ import fs from 'fs';
 import MembershipController from './MembershipController';
 import OrderaController from './OrdersController';
 import OrdersController from './OrdersController';
-import ReadHistoryController from './ReadHistoryController';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {

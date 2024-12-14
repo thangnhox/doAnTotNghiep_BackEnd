@@ -31,6 +31,7 @@ class ReadHistoryController {
                 BookID: history.booksId,
                 Title: history.books.title,
                 PageCount: history.books.pageCount,
+                cover_url: history.books.coverUrl,
                 LastRead: history.lastRead,
                 Progress: history.progress,
             }));
