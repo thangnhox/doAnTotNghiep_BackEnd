@@ -210,7 +210,7 @@ SELECT
     p.Name AS PublisherName,
     a.Name AS AuthorName,
     GROUP_CONCAT(c.Name) AS Categories,
-    COUNT(l.UserID) AS LikesCount
+    COALESCE(l.likes, 0) AS LikesCount
 FROM 
     test_DoAnTotNghiep.Books b
 JOIN 
@@ -222,9 +222,10 @@ LEFT JOIN
 LEFT JOIN 
     test_DoAnTotNghiep.Category c ON bc.CategoryID = c.ID
 LEFT JOIN 
-    test_DoAnTotNghiep.Likes l ON b.ID = l.BooksID
+    ( SELECT BooksID, COUNT(*) as likes from Likes GROUP BY BooksID ) l ON b.ID = l.BooksID
 GROUP BY 
-    b.ID, b.Title, b.Description, b.PageCount, b.Price, b.file_url, b.cover_url, b.status, b.PublishDate, b.IsRecommended, p.Name, a.Name;
+    b.ID;
+
 
 
 INSERT INTO test_DoAnTotNghiep.User (Email, password, Name, BirthYear, isAdmin)

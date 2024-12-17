@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { ViewEntity, ViewColumn } from "typeorm";
-import { bufferTransformer } from "../../util/dataTransform";
+import { bufferTransformer, decimalTransformer } from "../../util/dataTransform";
 
 @ViewEntity({ schema: "test_doantotnghiep", name: "BookDetails" })
 export class BookDetails {
@@ -43,7 +43,7 @@ export class BookDetails {
     @ViewColumn()
     Categories!: string;
 
-    @ViewColumn()
+    @ViewColumn({ transformer: decimalTransformer })
     LikesCount!: number;
 
     static readonly validSortColumn = Object.freeze([

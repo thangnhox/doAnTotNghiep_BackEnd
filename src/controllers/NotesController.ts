@@ -71,10 +71,10 @@ class NotesController {
             const notesRepository = (await AppDataSource.getInstance()).getRepository(Notes);
 
             // Extract query parameters
-            const { booksId, page, detail } = req.query;
+            const { booksId, booksPage, detail } = req.query;
 
             // Validate that at least one parameter is provided
-            if (!booksId && !page && !detail) {
+            if (!booksId && !booksPage && !detail) {
                 res.status(400).json({ message: "At least one of the following query parameters must be provided: booksId, page, detail." });
                 return;
             }
@@ -96,9 +96,9 @@ class NotesController {
                 conditions.push('note.booksId = :booksId');
                 queryBuilder.setParameter('booksId', booksId);
             }
-            if (page) {
+            if (booksPage) {
                 conditions.push('note.page = :page');
-                queryBuilder.setParameter('page', page);
+                queryBuilder.setParameter('page', booksPage);
             }
             if (detail) {
                 const detailKeywords = (detail as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);

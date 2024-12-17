@@ -12,6 +12,7 @@ import fs from 'fs';
 import MembershipController from './MembershipController';
 import OrderaController from './OrdersController';
 import OrdersController from './OrdersController';
+import { User } from '../models/entities/User';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
@@ -473,6 +474,58 @@ class BooksController {
             res.status(500).json({ message: "Server error" });
         }
 
+    }
+
+    async like(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+
+        try {
+            const { id } = req.params;
+
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
+            const currentUser = await userRepository.findOne({ where: { id: req.user.id }, relations: ['books'] });
+
+            if (!currentUser) {
+                console.error("Error user data null");
+                res.status(500).json({ message: "Server error" });
+                return;
+            }
+
+            const bookId = Number(id);
+            const liked = currentUser.books.some(book => book.id === bookId);
+            let likeStatus: number = 0;
+
+            if (liked) {
+                currentUser.books = currentUser.books.filter(book => book.id !== bookId);
+            } else {
+                const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
+                const book = await bookRepository.findOne({ where: { id: bookId } });
+
+                if (!book) {
+                    res.status(404).json({ message: "Book not found" });
+                    return;
+                }
+
+                currentUser.books.push(book);
+                likeStatus = 1;
+            }
+
+            await userRepository.save(currentUser);
+
+            res.status(200).json({
+                message: "Success",
+                data: {
+                    action: likeStatus === 1 ? "Liked": "Disliked",
+                }
+            })
+
+        } catch (error) {
+            console.error("Error while handling like request:", error);
+            res.status(500).json({ message: "Server error" });
+        }
     }
 
 }
