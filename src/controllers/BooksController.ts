@@ -518,12 +518,70 @@ class BooksController {
             res.status(200).json({
                 message: "Success",
                 data: {
-                    action: likeStatus === 1 ? "Liked": "Disliked",
+                    action: likeStatus === 1 ? "Liked" : "Disliked",
                 }
             })
 
         } catch (error) {
             console.error("Error while handling like request:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
+
+    async liked(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+
+        try {
+
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
+            const currentUser = await userRepository.findOne({ where: { id: req.user.id }, relations: ['books'] });
+
+            if (!currentUser) {
+                console.error("Error user data null");
+                res.status(500).json({ message: "Server error" });
+                return;
+            }
+
+            const { id } = req.params;
+
+            if (id) {
+                const bookId = Number(id);
+
+                const liked = currentUser.books.some(book => book.id === bookId);
+
+                res.status(200).json({
+                    message: "success",
+                    data: {
+                        liked,
+                    }
+                });
+            } else {
+                const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+
+                const likedBooks = currentUser.books.map(book => ({
+                    BookID: book.id,
+                    Title: book.title,
+                    Price: book.price,
+                    cover_url: book.coverUrl,
+                    PageCount: book.pageCount,
+                })).slice(offset, offset + pageSize);
+
+                res.status(200).json({
+                    message: "success",
+                    data: {
+                        likedBooks,
+                    },
+                    total: currentUser.books.length,
+                    page,
+                    pageSize,
+                });
+            }
+
+        } catch (error) {
+            console.error("Error while handling check like request:", error);
             res.status(500).json({ message: "Server error" });
         }
     }
