@@ -561,13 +561,13 @@ class BooksController {
             } else {
                 const { page, pageSize, offset } = getValidatedPageInfo(req.query);
 
-                const likedBooks = currentUser.books.map(book => ({
+                const likedBooks = currentUser.books.slice(offset, offset + pageSize).map(book => ({
                     BookID: book.id,
                     Title: book.title,
                     Price: book.price,
                     cover_url: book.coverUrl,
                     PageCount: book.pageCount,
-                })).slice(offset, offset + pageSize);
+                }));
 
                 res.status(200).json({
                     message: "success",
