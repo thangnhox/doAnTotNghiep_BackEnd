@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { User } from '../models/entities/User';
-import { makeAuthenticationToken, makeValidationToken } from '../services/authentication';
+import { makeAuthenticationToken, makePasswordResetToken, makeValidationToken } from '../services/authentication';
 import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../models/repository/Datasource';
-import { sendVerificationEmail } from '../services/email';
+import { sendMail, sendVerificationEmail } from '../services/email';
 import { decrypt } from '../util/crypto';
 
 class UserController {
@@ -173,6 +173,74 @@ class UserController {
 
         } catch (error: any) {
             res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    async resetPassword(req: Request, res: Response): Promise<void> {
+        try {
+            const { email } = req.body;
+
+            if (!email) {
+                res.status(400).json({ message: "Invalid request format" });
+                return;
+            }
+
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
+            const user = await userRepository.findOne({ where: { email } });
+
+            if (!user) {
+                res.status(404).json({ message: "Email not found" });
+                return;
+            }
+
+            const token = makePasswordResetToken(user);
+            const sendEmail = await sendMail(user.email, `<a href="${process.env.FRONT_END_ADDR}/resetPassword/${token}">change your password</a>`, "Change your password");
+
+            if (sendEmail.code !== 1) {
+                res.status(500).json({ message: `Error when sending email ${sendEmail.message}` });
+                return;
+            }
+
+            res.status(200).json({ message: "Mail sent" });
+
+        } catch (error) {
+            console.error("Error while handling reset password request:", error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    async confirmResetPassword(req: Request, res: Response): Promise<void> {
+        const passwordResetToken = req.params.token as string;
+        const secretKey = process.env.TOKEN_KEY as string;
+        const { newPassword } = req.body;
+
+        try {
+            if (!newPassword) {
+                res.status(400).json({ message: "Invalid format request" });
+                return;
+            }
+
+            const enc_token = jwt.verify(passwordResetToken, secretKey) as { enc_token: string };
+
+            const decoded = decrypt(enc_token.enc_token) as { userEmail: string, userName: string, userAvatar: string | null, userBirthYear: number };
+
+            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
+            const user = await userRepository.findOne({ where: { email: decoded.userEmail } });
+
+            if (!user) {
+                res.status(404).json({ message: "User linked to this token has been deleted" });
+                return;
+            }
+
+            user.password = newPassword;
+
+            await userRepository.save(user);
+
+            res.status(200).json({ message: "Password changed" });
+            
+        } catch (error) {
+            console.error("Error while confirm reset password request:", error);
+            res.status(500).json({ message: 'Invalid request' });
         }
     }
 

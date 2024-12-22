@@ -35,11 +35,11 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     }
 }
 
-export async function sendMail(email: string, message: string): Promise<{ code: number, message: string }> {
+export async function sendMail(email: string, message: string, subject: string = "Verify your Email"): Promise<{ code: number, message: string }> {
     const mailOptions = {
         from: process.env.EMAIL, // Replace with your Gmail address
         to: email,
-        subject: 'Verify Your Email',
+        subject: subject,
         html: `<p>${message}</p>`,
     };
 

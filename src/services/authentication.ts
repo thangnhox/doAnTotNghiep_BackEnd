@@ -82,3 +82,14 @@ export const makeValidationToken = (user: User) => {
 
     return jwt.sign({ enc_token }, secretKey, { expiresIn: '1h' });
 }
+
+export const makePasswordResetToken = (user: User) => {
+    const enc_token = encrypt({
+        userEmail: user.email,
+        userName: user.name,
+        userBirthYear: user.birthYear,
+        userAvatar: user.avatar
+    });
+
+    return jwt.sign({ enc_token }, secretKey, { expiresIn: '1h' });
+}

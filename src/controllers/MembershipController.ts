@@ -358,7 +358,7 @@ class MembershipController {
             }
 
             membershipRecordRepository.save(newRecord);
-            await sendMail(subscribe.user.email, "Membership registing successful");
+            await sendMail(subscribe.user.email, "Membership registing successful", "Payment notification");
         } catch (error) {
             console.error("Error while confirming subcription payment:", error);
             res.status(204).send();
@@ -384,7 +384,7 @@ class MembershipController {
                     logger.warn(`[${record.user.id}]: [${record.user.name}] auto renew has been turned of`);
                     Promise.all([
                         membershipRecordRepository.remove(record),
-                        sendMail(record.user.email, "Your subscription expired")
+                        await sendMail(record.user.email, "Your subscription expired", "Payment notification")
                     ])
                     continue;
                 }
@@ -438,14 +438,14 @@ class MembershipController {
 
                         newSubscription.transId = paymentResponse.transId;
                         await Promise.all([
-                            sendMail(record.user.email, "Your subscription has been renewed"),
+                            await sendMail(record.user.email, "Your subscription has been renewed", "Payment notification"),
                             subscribeRepository.save(newSubscription)
                         ]);
                     } else {
                         logger.warn("Transaction failed:", paymentResponse.message);
 
                         await Promise.all([
-                            sendMail(record.user.email, "Auto renew subscription failed, please renew your subscription manually"),
+                            await sendMail(record.user.email, "Auto renew subscription failed, please renew your subscription manually", "Payment notification"),
                             membershipRecordRepository.remove(record)
                         ]);
                     }

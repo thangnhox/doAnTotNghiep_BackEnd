@@ -299,13 +299,13 @@ class OrdersController {
                 bill.paymentDate = (new Date()).toISOString().split('T')[0];
                 bill.transId = transId;
                 await billRepository.save(bill);
-                await sendMail(bill.user.email, "Your order has been successfully charged");
+                await sendMail(bill.user.email, "Your order has been successfully charged", "Payment notification");
             } else {
                 const ordersRepository = dataSource.getRepository(Orders);
 
                 logger.warn(`Bill ${orderId} has failed with code ${resultCode}: ${message}`);
 
-                await sendMail(bill.user.email, "Your order charge failed");
+                await sendMail(bill.user.email, "Your order charge failed", "Payment notification");
 
                 if (bill.discount) {
                     await dataSource
