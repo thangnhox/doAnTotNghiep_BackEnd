@@ -145,6 +145,8 @@ class OrdersController {
 
                     if (discountUsed) {
                         warning.push(`${user.name} already used ${foundDiscount.name}`);
+                    } else if (foundDiscount.status === 0) {
+                        warning.push(`${foundDiscount.name} is no longer usable`);
                     } else {
                         curUser = user;
                         savedBill.discountId = foundDiscount.id;

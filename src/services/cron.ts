@@ -1,16 +1,19 @@
 import cron from 'node-cron';
 import MembershipController from '../controllers/MembershipController';
+import DiscountController from '../controllers/DiscountController';
 import Logger from '../util/logger';
 
 
 export function initCron(): void {
+    const logger = Logger.getInstance();
 
     cron.schedule('0 0 * * *', async () => {
-        console.log("Start daily auto renew membership:", (new Date()).toISOString().split('T')[0]);
-        Logger.getInstance().info("Start daily auto renew membership:", (new Date()).toISOString().split('T')[0]);
-        await MembershipController.autoRenewMembership();
-        console.log("Daily auto renew membership done");
-        Logger.getInstance().info("Daily auto renew membership done");
+        logger.info("Start daily jobs");
+        await Promise.all([
+            MembershipController.autoRenewMembership(),
+            DiscountController.dailyExpireCheck(),
+        ])
+        logger.info("Daily jobs completed");
     })
     
 }

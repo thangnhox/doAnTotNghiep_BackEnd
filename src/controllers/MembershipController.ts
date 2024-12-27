@@ -233,6 +233,9 @@ class MembershipController {
                     if (discountUsed) {
                         warning.push(`${user.name} already used ${foundDiscount.name}`);
                         subscribe.totalPrice = existsMembership.price;
+                    } else if (foundDiscount.status === 0) {
+                        warning.push(`${foundDiscount.name} is no longer usable`);
+                        subscribe.totalPrice = existsMembership.price;
                     } else {
                         curUser = user;
                         discount = foundDiscount;
@@ -368,6 +371,8 @@ class MembershipController {
     async autoRenewMembership(): Promise<void> {
         const logger = Logger.getInstance();
 
+        logger.info("Start daily auto renew membership:", (new Date()).toISOString().split('T')[0]);
+
         const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
         const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
         const subscribeRepository = (await AppDataSource.getInstance()).getRepository(Subscribe);
@@ -451,6 +456,8 @@ class MembershipController {
                     }
 
                 }
+
+                logger.info("Daily auto renew membership done");
             } catch (error) {
                 console.error("Error while renew membership", error);
                 continue;

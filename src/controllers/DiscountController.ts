@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../models/repository/Datasource';
 import { Discount } from '../models/entities/Discount';
 import { checkReqUser, generateRandomString, getValidatedPageInfo, sortValidator } from '../util/checker';
+import Logger from '../util/logger';
 
 class DiscountController {
     // Insert new discount
@@ -196,6 +197,37 @@ class DiscountController {
         } catch (error) {
             console.error('Error fetch discount:', error);
             res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    async dailyExpireCheck(): Promise<void> {
+        const logger = Logger.getInstance();
+        try {
+            logger.info("Start daily discount check");
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
+            const toDay = (new Date()).toISOString().split('T')[0];
+
+            // const result = await discountRepository.createQueryBuilder()
+            //     .update(Discount)
+            //     .set({ status: 0 })
+            //     .where("expireDate = :today", { today: toDay })
+            //     .execute();
+
+            const result = await discountRepository.update(
+                { expireDate: toDay },
+                { status: 0 }
+            );
+
+            if (!result.affected) {
+                logger.error("Error while updating discount:", result.raw);
+                return;
+            }
+
+            logger.warn(`Update success ${result.affected} discount(s) expired`);
+
+        } catch (error) {
+            logger.error("Error while check expired discount", error);
+            console.error("Error while check expired discount", error);
         }
     }
 }
