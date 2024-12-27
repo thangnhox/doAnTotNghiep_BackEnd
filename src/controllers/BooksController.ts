@@ -49,8 +49,8 @@ class BooksController {
                 .skip(offset)
                 .getManyAndCount();
 
-            if (books.length === 0) {
-                res.status(404).json({ message: "out of bounds" });
+            if (books.length === 0 && total > 0) {
+                res.status(416).json({ message: "out of bounds" });
                 return;
             }
 
@@ -214,7 +214,7 @@ class BooksController {
             }
 
             if (page > book.pageCount) {
-                res.status(400).json({ message: "Out of bound" });
+                res.status(416).json({ message: "Out of bound" });
                 return;
             }
 

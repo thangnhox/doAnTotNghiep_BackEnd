@@ -23,7 +23,7 @@ class ReadHistoryController {
             });
 
             if (histories.length === 0 && total > 0) {
-                res.status(400).json({ message: "Out of bound" });
+                res.status(416).json({ message: "Out of bound" });
                 return;
             }
 

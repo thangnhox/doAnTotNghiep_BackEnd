@@ -21,8 +21,8 @@ class PublisherController {
                 }
             });
 
-            if (publishers.length === 0) {
-                res.status(404).json({ message: "Out of bounds" });
+            if (publishers.length === 0 && total > 0) {
+                res.status(416).json({ message: "Out of bounds" });
                 return;
             }
 

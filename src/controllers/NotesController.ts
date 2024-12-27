@@ -24,8 +24,8 @@ class NotesController {
                 skip: offset
             })
 
-            if (notes.length === 0) {
-                res.status(404).json({ message: "Out of bound" });
+            if (notes.length === 0 && total > 0) {
+                res.status(416).json({ message: "Out of bound" });
                 return;
             }
 

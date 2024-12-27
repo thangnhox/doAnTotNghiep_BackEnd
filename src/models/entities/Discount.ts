@@ -46,5 +46,5 @@ export class Discount {
     })
     users!: User[];
 
-    static readonly validSortColumn = Object.freeze(['id', 'name', 'ratio']);
+    static readonly validSortColumn = Object.freeze(['id', 'name', 'ratio', 'expireDate']);
 }

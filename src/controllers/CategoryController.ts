@@ -193,7 +193,7 @@ class CategoryController {
 
                 // Handle out-of-bound pages
                 if (offset >= bookCount && bookCount > 0) {
-                    res.status(400).json({ message: "Page out of bounds" });
+                    res.status(416).json({ message: "Page out of bounds" });
                     return;
                 }
 

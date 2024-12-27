@@ -18,14 +18,19 @@ export function orderChecker(order: string) {
     return (order.toLowerCase() === 'asc') || (order.toLowerCase() === 'desc');
 }
 
-type OrderType = 'asc' | 'desc';
+type OrderType = 'ASC' | 'DESC';
 
-interface defaultSorter {
+interface DefaultSorter {
     defaultSort?: string;
     defaultOrder?: OrderType;
 }
 
-export function sortValidator(sort: string, order: string, entity: any, { defaultSort = 'null', defaultOrder = 'asc' }: defaultSorter = {}) {
+export function sortValidator(sort: string, order: string, entity: any, { defaultSort = 'null', defaultOrder = 'ASC' }: DefaultSorter = {}): {
+    status: number,
+    sort: string,
+    order: OrderType,
+    warnings: string[] | undefined
+} {
     let status = 0;
     let warnings: string[] = [];
 
@@ -37,18 +42,24 @@ export function sortValidator(sort: string, order: string, entity: any, { defaul
         status += 1;
         warnings.push(`Invalid sort query: '${sort}'. Defaulting to '${defaultSort}'.`);
     }
+
+    function orderChecker(order: string): boolean {
+        return ['ASC', 'DESC'].includes(order.toUpperCase());
+    }
+
     if (order && !orderChecker(order)) {
         status += 2;
-        warnings.push(`Invalid order query: '${order}'. Defaulting to 'asc'.`);
+        warnings.push(`Invalid order query: '${order}'. Defaulting to 'ASC'.`);
     }
 
     return {
         status,
         sort: (!(status & 1) && sort) ? sort : defaultSort,
-        order: (!(status & 2) && order) ? order : defaultOrder,
+        order: (!(status & 2) && order) ? order.toUpperCase() as OrderType : defaultOrder,
         warnings: warnings.length > 0 ? warnings : undefined
     }
 }
+
 
 export function getValidatedPageInfo(query: ParsedQs): { page: number, pageSize: number, offset: number } {
     const page = Math.max(parseInt(query.page as string, 10), 1) || 1;

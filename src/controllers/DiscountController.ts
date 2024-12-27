@@ -130,6 +130,74 @@ class DiscountController {
             res.status(500).json({ message: 'Server error' });
         }
     }
+
+    async search(req: Request, res: Response): Promise<void> {
+        try {
+            const { name } = req.query;
+            if (!name) {
+                res.status(400).json({ message: "Invalid request" });
+                return;
+            }
+
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+            const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Discount);
+
+            const qb = discountRepository.createQueryBuilder("discount")
+                .where("discount.name like :name", { name: `%${name}%` })
+                .orderBy(`discount.${sort}`, order)
+                .skip(offset).take(pageSize);
+
+            const [discounts, total] = await qb.getManyAndCount();
+
+            if (discounts.length === 0 && total > 0) {
+                res.status(416).json({ message: "Out of bound" });
+                return;
+            }
+
+            if (total === 0) {
+                res.status(404).json({ message: "Not found" });
+                return;
+            }
+
+            res.status(200).json({
+                message: "Success",
+                data: discounts,
+                total,
+                page,
+                pageSize,
+                warnings,
+            })
+
+        } catch (error) {
+            console.error('Error searching discount:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    async fetch(req: Request, res: Response) {
+        try {
+            const { name } = req.params;
+
+            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
+
+            const discount = await discountRepository.find({ where: { name } });
+
+            if (!discount) {
+                res.status(404).json({ message: "Not found" });
+                return;
+            }
+
+            res.status(200).json({
+                message: "Success",
+                data: discount,
+            })
+
+        } catch (error) {
+            console.error('Error fetch discount:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    }
 }
 
 export default new DiscountController;
