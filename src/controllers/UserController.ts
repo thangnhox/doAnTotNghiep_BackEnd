@@ -26,6 +26,11 @@ class UserController {
             } else if (userData.password !== password) {
                 res.status(401).json({ message: "access denied" });
             } else {
+                if (userData.status === 0) {
+                    res.status(403).json({ message: "User has been locked" });
+                    return;
+                }
+
                 const token = makeAuthenticationToken(userData.id, userData.email);
                 res.status(200).json({ message: "authentication confirmed", data: token });
             }

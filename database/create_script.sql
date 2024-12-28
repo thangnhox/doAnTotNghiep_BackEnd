@@ -23,6 +23,7 @@ CREATE TABLE test_DoAnTotNghiep.User (
     Name VARCHAR(255) NOT NULL,
     BirthYear INT NULL,
     Avatar VARCHAR(255),
+    Status INT NOT NULL DEFAULT 1,
     isAdmin BOOLEAN NOT NULL DEFAULT 0,
     INDEX (email)
 );

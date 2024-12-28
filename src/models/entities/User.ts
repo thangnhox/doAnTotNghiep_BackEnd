@@ -40,6 +40,9 @@ export class User {
     @Column("varchar", { name: "Avatar", nullable: true, length: 255 })
     avatar!: string | null;
 
+    @Column("int", { name: "Status", default: () => "'1'" })
+    status!: number;
+
     @Column("tinyint", { name: "isAdmin", width: 1, default: () => "'0'" })
     isAdmin!: number;
 
