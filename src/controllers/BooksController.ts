@@ -350,7 +350,7 @@ class BooksController {
             const queryBuilder = booksRepository.createQueryBuilder('BookDetails').select(selectFields);
 
             // Add dynamic search criteria
-            const { title, authorName, publisherName, category, minPrice, maxPrice, exact } = req.query;
+            const { title, authorName, publisherName, category, minPrice, maxPrice, minPage, maxPage, exact } = req.query;
 
             let conditions = [];
 
@@ -382,13 +382,37 @@ class BooksController {
                     queryBuilder.setParameter(`categoryKeyword${index}`, keyword);
                 });
             }
-            if (minPrice) {
-                conditions.push('BookDetails.Price >= :minPrice');
-                queryBuilder.setParameter('minPrice', minPrice);
+            if (minPrice || maxPrice) {
+                if (minPrice && maxPrice) {
+                    conditions.push('(BookDetails.Price >= :minPrice AND BookDetails.Price <= :maxPrice)');
+                    queryBuilder.setParameter('minPrice', minPrice);
+                    queryBuilder.setParameter('maxPrice', maxPrice);
+                } else {
+                    if (minPrice) {
+                        conditions.push('BookDetails.Price >= :minPrice');
+                        queryBuilder.setParameter('minPrice', minPrice);
+                    }
+                    if (maxPrice) {
+                        conditions.push('BookDetails.Price <= :maxPrice');
+                        queryBuilder.setParameter('maxPrice', maxPrice);
+                    }
+                }
             }
-            if (maxPrice) {
-                conditions.push('BookDetails.Price <= :maxPrice');
-                queryBuilder.setParameter('maxPrice', maxPrice);
+            if (minPage || maxPage) {
+                if (minPage && maxPage) {
+                    conditions.push('(BookDetails.PageCount >= :minPage AND BookDetails.PageCount <= :maxPage)');
+                    queryBuilder.setParameter('minPage', minPage);
+                    queryBuilder.setParameter('maxPage', maxPage);
+                } else {
+                    if (minPage) {
+                        conditions.push('BookDetails.PageCount >= :minPage');
+                        queryBuilder.setParameter('minPage', minPage);
+                    }
+                    if (maxPage) {
+                        conditions.push('BookDetails.PageCount <= :maxPage');
+                        queryBuilder.setParameter('maxPage', maxPage);
+                    }
+                }
             }
 
             if (conditions.length > 0) {
@@ -407,7 +431,9 @@ class BooksController {
                             "publisherName",
                             "category",
                             "minPrice",
-                            "maxPrice"
+                            "maxPrice",
+                            "minPage",
+                            "maxPage",
                         ],
                         validSelectFields: [
                             'BookID', 'Title', 'Description', 'PageCount', 'Price',

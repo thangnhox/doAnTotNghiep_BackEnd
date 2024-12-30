@@ -9,9 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { verifySinglePaySignature } from "../util/momo";
 import { sendMail } from '../services/email';
 import { singlePayAPI } from '../services/momo';
-import { getValidatedPageInfo, isValidUrl } from '../util/checker';
-import { IsNull, Not } from 'typeorm';
+import { getValidatedPageInfo } from '../util/checker';
 import Logger from '../util/logger';
+import { scheduleTaskJob, TimeDelay } from '../services/tasks';
 
 class OrdersController {
     async IsPurcharged(user: User, book: Books): Promise<boolean> {
@@ -104,11 +104,12 @@ class OrdersController {
                 return;
             }
 
-            const discountRepository = (await AppDataSource.getInstance()).getRepository(Discount);
-            const ordersRepository = (await AppDataSource.getInstance()).getRepository(Orders);
-            const userRepository = (await AppDataSource.getInstance()).getRepository(User);
-            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
-            const billRepository = (await AppDataSource.getInstance()).getRepository(Bill);
+            const dataSource = await AppDataSource.getInstance();
+            const discountRepository = dataSource.getRepository(Discount);
+            const ordersRepository = dataSource.getRepository(Orders);
+            const userRepository = dataSource.getRepository(User);
+            const bookRepository = dataSource.getRepository(Books);
+            const billRepository = dataSource.getRepository(Bill);
 
             let billId: string | null = uuidv4();
             const newBill = new Bill();
@@ -119,7 +120,7 @@ class OrdersController {
             const savedBill = await billRepository.save(newBill);
 
             const added = [];
-            const dupplicated: number[] = [];
+            const duplicated: number[] = [];
             const notExists: number[] = [];
             const notSell: number[] = [];
             let totalPrice: number = 0;
@@ -160,7 +161,7 @@ class OrdersController {
                 const existsOrder = await ordersRepository.findOne({ where: { userId: req.user.id, booksId: bookId } });
                 const existsBook = await bookRepository.findOne({ where: { id: bookId } });
                 if (existsOrder) {
-                    dupplicated.push(bookId);
+                    duplicated.push(bookId);
                     continue;
                 }
                 if (!existsBook) {
@@ -196,7 +197,7 @@ class OrdersController {
                 res.status(400).json({
                     message: `Failed to create order`,
                     data: {
-                        Duplicated: dupplicated,
+                        Duplicated: duplicated,
                         NotExists: notExists,
                         NotSell: notSell,
                     },
@@ -255,7 +256,7 @@ class OrdersController {
                 data: {
                     ID: savedBill.id,
                     Added: added,
-                    Duplicated: dupplicated,
+                    Duplicated: duplicated,
                     NotExists: notExists,
                     NotSell: notSell,
                     TotalPrice: savedBill.totalPrice,
@@ -266,6 +267,8 @@ class OrdersController {
                 },
                 warning,
             })
+
+            scheduleTaskJob(TimeDelay.TWO_HOURS, this.orderTimeout, savedBill.id);
 
         } catch (error) {
             console.error("Error", error);
@@ -362,6 +365,45 @@ class OrdersController {
         } catch (error) {
             console.error("Error while fetching bought books:", error);
             res.status(500).json({ message: "Server error" });
+        }
+    }
+
+    async orderTimeout(billId: string): Promise<void> {
+        const dataSource = await AppDataSource.getInstance();
+        const billRepository = dataSource.getRepository(Bill);
+        const ordersRepository = dataSource.getRepository(Orders);
+        const logger = Logger.getInstance();
+
+        try {
+            const bill = await billRepository.findOne({ where: { id: billId }, relations: ['orders'] });
+            if (!bill) {
+                logger.error(`${billId} has already been deleted`);
+                return;
+            }
+
+            if (bill.transId) {
+                logger.info(`${billId} check completed, purcharge success`);
+                return;
+            }
+
+            logger.warn(`${billId} purcharge timeout, begin removal`);
+
+            if (bill.discountId) {
+                await dataSource
+                    .createQueryBuilder()
+                    .relation(User, 'discounts')
+                    .of(bill.userId)
+                    .remove(bill.discountId);
+            }
+
+            await ordersRepository.remove(bill.orders);
+
+            await billRepository.remove(bill);
+
+            logger.warn(`${billId} removed`);
+
+        } catch (error) {
+            logger.error("Error while checking order timeout");
         }
     }
 

@@ -16,7 +16,7 @@ export class BookDetails {
     @ViewColumn()
     PageCount!: number;
 
-    @ViewColumn()
+    @ViewColumn({ transformer: decimalTransformer })
     Price!: number;
 
     @ViewColumn()
