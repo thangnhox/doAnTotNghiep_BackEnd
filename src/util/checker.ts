@@ -14,8 +14,7 @@ export function checkReqUser(req: Request, res: Response, admin: number = 1): bo
 }
 
 export function orderChecker(order: string) {
-    if (!order) return false;
-    return (order.toLowerCase() === 'asc') || (order.toLowerCase() === 'desc');
+    return ['ASC', 'DESC'].includes(order.toUpperCase());
 }
 
 type OrderType = 'ASC' | 'DESC';
