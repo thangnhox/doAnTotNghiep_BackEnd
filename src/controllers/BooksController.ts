@@ -13,6 +13,7 @@ import MembershipController from './MembershipController';
 import OrderaController from './OrdersController';
 import OrdersController from './OrdersController';
 import { User } from '../models/entities/User';
+import { BookRequest } from '../models/entities/BookRequest';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
@@ -611,6 +612,134 @@ class BooksController {
             res.status(500).json({ message: "Server error" });
         }
     }
+
+    async requestedBooks(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+
+        try {
+            const dataSource = await AppDataSource.getInstance();
+            const bookrequestRepository = dataSource.getRepository(BookRequest);
+
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+
+            const [list, total] = await bookrequestRepository.findAndCount({ where: { userId: req.user.id }, take: pageSize, skip: offset });
+
+            res.status(200).json({
+                message: "Success",
+                data: list,
+                total,
+                page,
+                pageSize
+            });
+        } catch (error) {
+            console.error("Error while getting user request books list:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
+
+    async makeBookRequest(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+    
+        try {
+            const { title, description } = req.body;
+    
+            if (!title) {
+                res.status(400).json({ message: "Title is required" });
+                return;
+            }
+    
+            const dataSource = await AppDataSource.getInstance();
+            const bookRequestRepository = dataSource.getRepository(BookRequest);
+    
+            const newBookRequest = new BookRequest();
+            newBookRequest.title = title;
+            newBookRequest.description = description;
+            newBookRequest.userId = req.user.id;
+    
+            await bookRequestRepository.save(newBookRequest);
+    
+            res.status(201).json({ message: "Book request created successfully", data: newBookRequest });
+        } catch (error) {
+            console.error("Error while creating book request:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
+    
+    async editBookRequest(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+    
+        try {
+            const { id } = req.params;
+            const { title, description } = req.body;
+    
+            if (!id) {
+                res.status(400).json({ message: "ID and Title are required" });
+                return;
+            }
+    
+            const dataSource = await AppDataSource.getInstance();
+            const bookRequestRepository = dataSource.getRepository(BookRequest);
+    
+            const bookRequest = await bookRequestRepository.findOne({ where: { id: Number(id), userId: req.user.id } });
+    
+            if (!bookRequest) {
+                res.status(404).json({ message: "Book request not found" });
+                return;
+            }
+    
+            bookRequest.title = title ? title : bookRequest.title;
+            bookRequest.description = description ? description : bookRequest.description;
+    
+            await bookRequestRepository.save(bookRequest);
+    
+            res.status(200).json({ message: "Book request updated successfully", data: bookRequest });
+        } catch (error) {
+            console.error("Error while editing book request:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
+    
+    async cancelBookRequest(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+    
+        try {
+            const { id } = req.params;
+    
+            if (!id) {
+                res.status(400).json({ message: "ID is required" });
+                return;
+            }
+    
+            const dataSource = await AppDataSource.getInstance();
+            const bookRequestRepository = dataSource.getRepository(BookRequest);
+    
+            const bookRequest = await bookRequestRepository.findOne({ where: { id: Number(id), userId: req.user.id } });
+    
+            if (!bookRequest) {
+                res.status(404).json({ message: "Book request not found" });
+                return;
+            }
+    
+            await bookRequestRepository.remove(bookRequest);
+    
+            res.status(200).json({ message: "Book request canceled successfully" });
+        } catch (error) {
+            console.error("Error while canceling book request:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }    
 
 }
 

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../models/repository/Datasource';
 import { User } from '../models/entities/User';
 import { makeAuthenticationToken } from '../services/authentication';
-import { checkReqUser, getValidatedPageInfo, orderChecker } from '../util/checker';
+import { checkReqUser, getValidatedPageInfo, orderChecker, sortValidator } from '../util/checker';
 import { Orders } from '../models/entities/Orders';
 import { Bill } from '../models/entities/Bill';
 import { Books } from '../models/entities/Books';
@@ -10,6 +10,8 @@ import { BookDetails } from '../models/views/BookDetails';
 import { MembershipRecord } from '../models/entities/MembershipRecord';
 import { Membership } from '../models/entities/Membership';
 import { Subscribe } from '../models/entities/Subscribe';
+import { BookRequest } from '../models/entities/BookRequest';
+import { sendMail } from '../services/email';
 
 class AdminController {
     async login(req: Request, res: Response): Promise<void> {
@@ -326,10 +328,10 @@ class AdminController {
 
     async getUserAgeGroupStatistics(req: Request, res: Response): Promise<void> {
         if (!checkReqUser(req, res)) return;
-    
+
         try {
             const entityManager = (await AppDataSource.getInstance()).manager;
-    
+
             const sqlQuery = `
                 SELECT
                     AllAgeGroups.AgeGroup,
@@ -367,14 +369,14 @@ class AdminController {
                     'Total',
                     (SELECT COUNT(*) FROM test_DoAnTotNghiep.User);
             `;
-    
+
             const ageGroupStatistics = await entityManager.query(sqlQuery);
-    
+
             const formattedAgeGroupStatistics = ageGroupStatistics.map((record: { AgeGroup: any; UserCount: string; }) => ({
                 AgeGroup: record.AgeGroup,
                 UserCount: parseInt(record.UserCount, 10),
             }));
-    
+
             res.status(200).json({
                 message: "Success",
                 data: formattedAgeGroupStatistics,
@@ -382,6 +384,140 @@ class AdminController {
         } catch (error) {
             console.error("Error while getting user age group statistics:", error);
             res.status(500).json({ message: "Database server error", error });
+        }
+    }
+
+    async requestedBooks(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        try {
+            const dataSource = await AppDataSource.getInstance();
+            const bookrequestRepository = dataSource.getRepository(BookRequest);
+
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+
+            const [list, total] = await bookrequestRepository.findAndCount({ take: pageSize, skip: offset });
+
+            res.status(200).json({
+                message: "Success",
+                data: list,
+                total,
+                page,
+                pageSize
+            });
+        } catch (error) {
+            console.error("Error while getting user request books list:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
+
+    async searchRequest(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        try {
+            const { title, description } = req.query;
+
+            // Validate that at least one parameter is provided
+            if (!title && !description) {
+                res.status(400).json({ message: "At least one of the following query parameters must be provided: title, description." });
+                return;
+            }
+
+            const { page, pageSize, offset } = getValidatedPageInfo(req.query);
+
+            const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, BookRequest);
+
+            const dataSource = await AppDataSource.getInstance();
+            const bookRequestRepository = dataSource.getRepository(BookRequest);
+
+            // Build the query dynamically
+            const queryBuilder = bookRequestRepository.createQueryBuilder('bookRequest');
+
+            let conditions: string[] = [];
+
+            if (title) {
+                const titleKeywords = (title as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);
+                titleKeywords.forEach((keyword, index) => {
+                    conditions.push(`LOWER(bookRequest.title) LIKE :titleKeyword${index}`);
+                    queryBuilder.setParameter(`titleKeyword${index}`, keyword);
+                });
+            }
+
+            if (description) {
+                const descriptionKeywords = (description as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);
+                descriptionKeywords.forEach((keyword, index) => {
+                    conditions.push(`LOWER(bookRequest.description) LIKE :descriptionKeyword${index}`);
+                    queryBuilder.setParameter(`descriptionKeyword${index}`, keyword);
+                });
+            }
+
+            if (conditions.length > 0) {
+                queryBuilder.where(conditions.join(' OR '));
+            }
+
+            const [bookRequests, total] = await queryBuilder.orderBy(`bookRequest.${sort}`, order.toUpperCase() as 'ASC' | 'DESC')
+                .skip(offset).take(pageSize).getManyAndCount();
+
+            if (bookRequests.length === 0 && total > 0) {
+                res.status(404).json({ message: "No book requests found." });
+                return;
+            }
+
+            res.status(200).json({
+                message: "Book requests found",
+                data: bookRequests,
+                total,
+                page,
+                pageSize,
+                warnings
+            });
+        } catch (error: any) {
+            console.error("Error while searching book requests:", error);
+            res.status(500).json({ message: "Failed to fetch book request(s)", error: error.message });
+        }
+    }
+
+    async confirmBookrequest(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        try {
+            const { id } = req.params;
+            const { bookId } = req.query;
+
+            if (!bookId) {
+                res.status(400).json({ message: "Must specify bookId, -1 for reject request" });
+            }
+
+            const dataSource = await AppDataSource.getInstance();
+            const bookRequestRepository = dataSource.getRepository(BookRequest);
+
+            const request = await bookRequestRepository.findOne({ where: { id: Number(id) }, relations: ['user'] });
+
+            if (!request) {
+                res.status(404).json({ message: "Book request not found" });
+                return;
+            }
+
+            if (bookId === "-1") {
+                sendMail(request.user.email, `Your book request ${request.title} has been rejected`, "Book request notification");
+            } else {
+                const bookRepository = dataSource.getRepository(Books);
+                const book = await bookRepository.findOne({ where: { id: Number(bookId) } });
+
+                if (!book) {
+                    res.status(404).json({ message: "Book not found" });
+                    return;
+                }
+
+                sendMail(request.user.email, `Your book request ${request.title} has been conpleted and available as ${book.title}`, "Book request notification");
+            }
+
+            await bookRequestRepository.remove(request);
+            res.status(200).json({ message: "Confirm success" });
+
+        } catch (error: any) {
+            console.error("Error while confirm book request:", error);
+            res.status(500).json({ message: "Failed to fetch book request(s)", error: error.message });
         }
     }
 

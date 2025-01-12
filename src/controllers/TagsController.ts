@@ -179,33 +179,33 @@ class TagsController {
             res.status(500).json({ message: "Authentication error" });
             return;
         }
-    
-        try {   
+
+        try {
             const { bookId, page, noteId } = req.query;
             const { id } = req.params;
-    
+
             if (!bookId && !page && !noteId) {
                 res.status(400).json({ message: "Invalid request", data: { note: "must contain at least bookId or noteId", optional: "page" } });
                 return;
             }
-    
+
             const tagsRepository = (await AppDataSource.getInstance()).getRepository(Tags);
             const existsTag = await tagsRepository.findOne({ where: { id: Number(id), userId: req.user.id } });
-    
+
             if (!existsTag) {
                 res.status(404).json({ message: "Your tag id not found" });
                 return;
             }
-    
+
             let detachedBook = false;
             let detachedNote = false;
             const warning: string[] = [];
-    
+
             if (bookId) {
                 const bookPage = page ? Number(page) : -1;
                 const tagsBooksRepository = (await AppDataSource.getInstance()).getRepository(TagsBooks);
                 const attached = await tagsBooksRepository.findOne({ where: { tagsId: existsTag.id, booksId: Number(bookId), page: bookPage } });
-    
+
                 if (attached) {
                     await tagsBooksRepository.remove(attached);
                     detachedBook = true;
@@ -213,11 +213,11 @@ class TagsController {
                     warning.push(`Book: ${bookId}/${bookPage} not attached, skipped`);
                 }
             }
-    
+
             if (noteId) {
                 const tagsNotesRepository = (await AppDataSource.getInstance()).getRepository(TagsNotes);
                 const attached = await tagsNotesRepository.findOne({ where: { tagsId: existsTag.id, notesId: Number(noteId) } });
-    
+
                 if (attached) {
                     await tagsNotesRepository.remove(attached);
                     detachedNote = true;
@@ -225,14 +225,14 @@ class TagsController {
                     warning.push(`Note: ${noteId} not attached to ${id}, skipped`);
                 }
             }
-    
+
             if (!detachedBook && !detachedNote) {
                 res.status(400).json({ message: "No action performed", data: null, warning });
                 return;
             }
-    
+
             res.status(200).json({ message: "Detach success", data: { detachedBook, detachedNote }, warning });
-    
+
         } catch (error) {
             console.error("Error while detaching tag", error);
             res.status(500).json({ message: "Server error" });
@@ -246,6 +246,14 @@ class TagsController {
         }
 
         try {
+
+            const allowed = await MembershipController.isValidUser(req.user);
+
+            if (!allowed || !(allowed.rank & Membership.TAG_NOTE)) {
+                res.status(403).json({ message: "Your account doesn't have permission to do so" });
+                return;
+            }
+
             const { name } = req.query as { name: string | null };
 
             if (!name) {
@@ -339,7 +347,7 @@ class TagsController {
             await tagsNotesRepository.remove(existsTag.tagsNotes);
 
             await tagsRepository.remove(existsTag);
-            res.status(200).json({ message: "Remove tag success"});
+            res.status(200).json({ message: "Remove tag success" });
 
         } catch (error) {
             console.error("Error while remove tag", error);
@@ -352,40 +360,40 @@ class TagsController {
             res.status(500).json({ message: "Authentication error" });
             return;
         }
-    
+
         try {
             const tagsRepository = (await AppDataSource.getInstance()).getRepository(Tags);
-    
+
             // Extract query parameters
             const { bookId, notesId, tagsName } = req.query;
-    
+
             // Validate that at least one parameter is provided
             if (!bookId && !notesId && !tagsName) {
                 res.status(400).json({ message: "At least one of the following query parameters must be provided: bookId, notesId, tagsName." });
                 return;
             }
-    
+
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
-    
+
             // Build the query dynamically
             const queryBuilder = tagsRepository.createQueryBuilder('tag')
                 .leftJoinAndSelect('tag.user', 'user')
                 .where('tag.userId = :userId', { userId: req.user.id });
-    
+
             let conditions = [];
-    
+
             if (bookId) {
                 queryBuilder.leftJoin('tag.tagsBooks', 'tagsBooks');
                 conditions.push('tagsBooks.booksId = :bookId');
                 queryBuilder.setParameter('bookId', bookId);
             }
-    
+
             if (notesId) {
                 queryBuilder.leftJoin('tag.tagsNotes', 'tagsNotes');
                 conditions.push('tagsNotes.notesId = :notesId');
                 queryBuilder.setParameter('notesId', notesId);
             }
-    
+
             if (tagsName) {
                 const nameKeywords = (tagsName as string).split(' ').map(keyword => `%${keyword.toLowerCase()}%`);
                 nameKeywords.forEach((keyword, index) => {
@@ -393,17 +401,17 @@ class TagsController {
                     queryBuilder.setParameter(`nameKeyword${index}`, keyword);
                 });
             }
-    
+
             if (conditions.length > 0) {
                 const joinedConditions = conditions.join(' OR ');
                 queryBuilder.andWhere(`(${joinedConditions})`);
             }
-    
+
             const [tags, total] = await queryBuilder
                 .skip(offset)
                 .take(pageSize)
                 .getManyAndCount();
-    
+
             if (tags.length === 0) {
                 res.status(404).json({ message: "No tags found." });
                 return;
@@ -413,7 +421,7 @@ class TagsController {
                 id: tag.id,
                 name: tag.name
             }));
-    
+
             res.status(200).json({ message: "Tags found", data: formattedResult, total, page, pageSize });
         } catch (error) {
             console.log("Error while searching tags:", error);

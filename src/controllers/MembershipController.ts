@@ -2,15 +2,16 @@ import { Request, Response } from 'express';
 import { User } from '../models/entities/User';
 import { AppDataSource } from '../models/repository/Datasource';
 import { MembershipRecord } from '../models/entities/MembershipRecord';
-import { checkReqUser, getDateFromToday, getValidatedPageInfo, isValidUrl, sortValidator } from '../util/checker';
+import { checkReqUser, getDateFromToday, getDateNDaysAhead, getValidatedPageInfo, isValidUrl, sortValidator } from '../util/checker';
 import { Membership } from '../models/entities/Membership';
 import { Subscribe } from '../models/entities/Subscribe';
 import { v4 as uuidv4 } from 'uuid';
 import { Discount } from '../models/entities/Discount';
-import { decrypt, Frequency_Number, Frequency_String, rsaEncrypt, verifySubscriptionSignature } from '../util/momo';
+import { decrypt, Frequency_Number, Frequency_String, rsaEncrypt, verifySinglePaySignature, verifySubscriptionSignature } from '../util/momo';
 import { getSubscriptionToken, singlePayAPI, manageSubscription, membershipPayment, initSubscriptionAPI } from '../services/momo';
 import { sendMail } from '../services/email';
 import Logger from '../util/logger';
+import { scheduleTaskJob, TimeDelay } from '../services/tasks';
 
 class MembershipController {
     async isValidUser(user: User): Promise<Membership | null> {
@@ -510,6 +511,261 @@ class MembershipController {
         }
 
     }
+
+    async create(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+
+        try {
+            const { membershipId, discountName } = req.body;
+
+            if (!membershipId) {
+                res.status(400).json({ message: "Invalid request" });
+                return;
+            }
+
+            const dataSource = await AppDataSource.getInstance();
+            const discountRepository = dataSource.getRepository(Discount);
+            const userRepository = dataSource.getRepository(User);
+            const membershipRecordRepository = dataSource.getRepository(MembershipRecord);
+            const membershipRepository = dataSource.getRepository(Membership);
+            const subscribeRepository = dataSource.getRepository(Subscribe);
+
+            const alreadyMembership = await membershipRecordRepository.findOne({ where: { userId: req.user.id }, relations: ['membership'] });
+
+            const foundMembership = await membershipRepository.findOne({ where: { id: membershipId } });
+
+            if (!foundMembership) {
+                res.status(404).json({ message: "Membership not found" });
+                return;
+            }
+
+            const newSubscription = new Subscribe();
+            newSubscription.id = uuidv4();
+            newSubscription.userId = req.user.id;
+            newSubscription.date = (new Date).toISOString().split('T')[0];
+
+            if (alreadyMembership) {
+                if (alreadyMembership.membershipId === membershipId) {
+                    newSubscription.membershipId = membershipId;
+                    newSubscription.totalPrice = foundMembership.price;
+                } else {
+                    const priceDifference = foundMembership.price - alreadyMembership.membership.price;
+
+                    if (priceDifference <= 0) {
+                        alreadyMembership.membershipId = foundMembership.id;
+                        await membershipRecordRepository.save(alreadyMembership);
+                        res.status(200).json({ message: "Change membership success, no additional charge" });
+                        await sendMail(req.user.email, "Your membership has changed", "Membership change notification");
+                        return;
+                    }
+
+                    newSubscription.membershipId = foundMembership.id;
+                    newSubscription.totalPrice = priceDifference;
+                }
+            } else {
+                newSubscription.membershipId = foundMembership.id;
+                newSubscription.totalPrice = foundMembership.price;
+            }
+
+
+            const warning: string[] = [];
+            let discount: Discount | null = null;
+            let curUser: User | null = null;
+            let discountStatus: number = -1;
+
+            if (discountName) {
+                const foundDiscount = await discountRepository.findOne({ where: { name: discountName } });
+                if (!foundDiscount) {
+                    warning.push(`Discount ${discountName} not found`);
+                } else {
+                    const user = await userRepository.findOne({ where: { id: req.user.id }, relations: ['discounts'] });
+                    if (!user) {
+                        res.status(500).json({ message: "Error when apply discount" });
+                        return;
+                    }
+
+                    const discountUsed = user.discounts.some(d => d.id === foundDiscount.id);
+
+                    if (discountUsed) {
+                        warning.push(`${user.name} already used ${foundDiscount.name}`);
+                    } else if (foundDiscount.status === 0) {
+                        warning.push(`${foundDiscount.name} is no longer usable`);
+                    } else {
+                        curUser = user;
+                        discount = foundDiscount;
+                        discountStatus = foundDiscount.id;
+                        newSubscription.totalPrice = newSubscription.totalPrice - (newSubscription.totalPrice * foundDiscount.ratio);
+                    }
+                }
+            }
+
+            const initMomoPayment = await singlePayAPI({
+                partnerCode: process.env.MOMO_PARTNER_CODE as string,
+                requestId: newSubscription.id,
+                amount: newSubscription.totalPrice,
+                orderId: newSubscription.id,
+                orderInfo: "Pay with momo",
+                redirectUrl: `${process.env.FRONT_END_ADDR}${process.env.FRONE_END_REDIRECT_PATH}`,
+                ipnUrl: `${process.env.BACK_END_ADDR}/membership/confirm`,
+                requestType: "captureWallet",
+                extraData: "",
+                lang: "vi",
+            });
+
+            let payUrl = null, deeplink = null, qrCodeUrl = null;
+
+            if (!initMomoPayment) {
+                res.status(400).json({
+                    message: "Failed to create payment",
+                });
+
+                return;
+            }
+
+            await subscribeRepository.save(newSubscription);
+            if (curUser && discount) {
+                curUser.discounts.push(discount);
+                await userRepository.save(curUser);
+            }
+
+            payUrl = initMomoPayment.payUrl;
+            deeplink = initMomoPayment.deeplink;
+            qrCodeUrl = initMomoPayment.qrCodeUrl;
+
+            res.status(200).json({
+                message: "Success",
+                data: {
+                    ID: newSubscription.id,
+                    TotalPrice: newSubscription.totalPrice,
+                    DiscountApply: discountStatus,
+                    PayUrl: payUrl,
+                    DeepLink: deeplink,
+                    QrCodeUrl: qrCodeUrl
+                },
+                warning,
+            })
+
+            scheduleTaskJob(TimeDelay.TWO_HOURS, this.timeout, newSubscription.id);
+
+        } catch (error) {
+            console.error("Error while creating membership payment", error);
+            res.status(500).json({ message: "Error while creating order" });
+        }
+    }
+
+    async confirm(req: Request, res: Response): Promise<void> {
+        const { orderId, resultCode, transId, message } = req.body;
+
+        const logger = Logger.getInstance();
+
+        const isValidSignature = verifySinglePaySignature(req.body);
+        if (!isValidSignature) {
+            res.status(400).json({ message: "Invalid signature" });
+            return;
+        }
+        res.status(204).send();
+
+        try {
+            const dataSource = await AppDataSource.getInstance();
+            const subscribeRepository = dataSource.getRepository(Subscribe);
+
+            const subscribe = await subscribeRepository.findOne({ where: { id: orderId }, relations: ['user'] });
+
+            if (!subscribe) {
+                logger.error("Unexpected removal of bill:", orderId);
+                return;
+            }
+
+            if (resultCode === 0) {
+                const membershipRecordRepository = dataSource.getRepository(MembershipRecord);
+                const membership = await membershipRecordRepository.findOne({ where: { userId: subscribe.userId } });
+
+                if (membership) {
+                    if (subscribe.membershipId !== membership.membershipId) {
+                        membership.membershipId = subscribe.membershipId;
+                        sendMail(subscribe.user.email, "Your membership has changed", "Membership change notification");
+                    } else {
+                        membership.expireDate = getDateNDaysAhead(membership.expireDate, 30);
+                        sendMail(subscribe.user.email, `Your membership has been extended to ${membership.expireDate}`, "Membership extend notification");
+                    }
+
+                    membershipRecordRepository.save(membership);
+                } else {
+                    const newMembership = new MembershipRecord();
+
+                    newMembership.userId = subscribe.userId;
+                    newMembership.membershipId = subscribe.membershipId;
+                    newMembership.expireDate = getDateFromToday(30);
+                    sendMail(
+                        subscribe.user.email,
+                        `Your membership has successfully registered, valid until ${newMembership.expireDate}`,
+                        "Membership register notification"
+                    );
+                }
+
+                subscribe.transId = transId;
+                await subscribeRepository.save(subscribe);
+
+            } else {
+                await sendMail(subscribe.user.email, "Subscribe failed", "Payment notification");
+
+                logger.warn(`Bill ${orderId} has failed with code ${resultCode}: ${message}`);
+
+                if (subscribe.discount) {
+                    await dataSource
+                        .createQueryBuilder()
+                        .relation(User, 'discounts')
+                        .of(subscribe.userId)
+                        .remove(subscribe.discountId);
+                }
+
+                await subscribeRepository.remove(subscribe);
+            }
+        } catch (error) {
+            console.error('Error handling IPN:', error);
+        }
+    }
+
+    async timeout(id: string): Promise<void> {
+        const dataSource = await AppDataSource.getInstance();
+        const subscribeRepository = dataSource.getRepository(Subscribe);
+        const logger = Logger.getInstance();
+
+        try {
+            const subscribe = await subscribeRepository.findOne({ where: { id } });
+
+            if (!subscribe) {
+                logger.error(`${id} has been deleted`);
+                return;
+            }
+
+            if (subscribe.transId) {
+                logger.info(`${id} success`);
+                return;
+            }
+
+            logger.warn(`${id} subscribe timeout, begin removal`);
+
+            if (subscribe.discountId) {
+                await dataSource
+                    .createQueryBuilder()
+                    .relation(User, 'discounts')
+                    .of(subscribe.userId)
+                    .remove(subscribe.discountId);
+            }
+
+            await subscribeRepository.remove(subscribe);
+
+            logger.warn(`${id} removed`);
+
+        } catch (error) {
+            logger.error("Error while checking subscribe timeout");
+        }
+    }
+
 }
 
 export default new MembershipController;
