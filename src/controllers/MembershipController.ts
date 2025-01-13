@@ -346,6 +346,11 @@ class MembershipController {
 
             const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
 
+            if (!subscribe.membershipId) {
+                console.error("This subscribe is not membership");
+                return;
+            }
+
             const newRecord = new MembershipRecord();
             newRecord.userId = subscribe.userId;
             newRecord.membershipId = subscribe.membershipId;
@@ -679,6 +684,11 @@ class MembershipController {
                 return;
             }
 
+            if (!subscribe.membershipId) {
+                logger.error(`${subscribe.id} is not membership transaction`);
+                return;
+            }
+
             if (resultCode === 0) {
                 const membershipRecordRepository = dataSource.getRepository(MembershipRecord);
                 const membership = await membershipRecordRepository.findOne({ where: { userId: subscribe.userId } });
@@ -692,7 +702,7 @@ class MembershipController {
                         sendMail(subscribe.user.email, `Your membership has been extended to ${membership.expireDate}`, "Membership extend notification");
                     }
 
-                    membershipRecordRepository.save(membership);
+                    await membershipRecordRepository.save(membership);
                 } else {
                     const newMembership = new MembershipRecord();
 
@@ -704,6 +714,7 @@ class MembershipController {
                         `Your membership has successfully registered, valid until ${newMembership.expireDate}`,
                         "Membership register notification"
                     );
+                    await membershipRecordRepository.save(newMembership);
                 }
 
                 subscribe.transId = transId;

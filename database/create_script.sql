@@ -138,13 +138,15 @@ CREATE TABLE test_DoAnTotNghiep.Used (
 CREATE TABLE test_DoAnTotNghiep.Subscribe (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT NOT NULL,
-    MembershipID INT NOT NULL,
+    MembershipID INT NULL,
+    BooksID INT NULL,
     DiscountID INT,
     TransID BIGINT,
     TotalPrice DECIMAL(10,2) NOT NULL,
     Date DATE NOT NULL,
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
     FOREIGN KEY (MembershipID) REFERENCES test_DoAnTotNghiep.Membership(ID),
+    FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID),
     FOREIGN KEY (DiscountID) REFERENCES test_DoAnTotNghiep.Discount(ID)
 );
 
@@ -190,6 +192,16 @@ CREATE TABLE test_DoAnTotNghiep.ReadHistory (
     BooksID INT NOT NULL,
     LastRead INT NOT NULL,
     Progress INT NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
+    FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID),
+    UNIQUE (UserID, BooksID)
+);
+
+CREATE TABLE test_DoAnTotNghiep.BookRental (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    BooksID INT NOT NULL,
+    Expire_date DATE NOT NULL,
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
     FOREIGN KEY (BooksID) REFERENCES test_DoAnTotNghiep.Books(ID),
     UNIQUE (UserID, BooksID)

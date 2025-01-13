@@ -18,6 +18,7 @@ import { Books } from "./Books";
 import { BookRequest } from "./BookRequest";
 import { Bill } from "./Bill";
 import { ReadHistory } from "./ReadHistory";
+import { BookRental } from "./BookRental";
 
 @Index("Email", ["email"], { unique: true })
 @Entity("User", { schema: "test_doantotnghiep" })
@@ -46,8 +47,8 @@ export class User {
     @Column("tinyint", { name: "isAdmin", width: 1, default: () => "'0'" })
     isAdmin!: number;
 
-	@OneToMany(() => Bill, (bill) => bill.user)
-	bills!: Bill[];
+    @OneToMany(() => Bill, (bill) => bill.user)
+    bills!: Bill[];
 
     @OneToMany(() => Notes, (notes) => notes.user)
     notes!: Notes[];
@@ -84,6 +85,9 @@ export class User {
 
     @OneToMany(() => BookRequest, (bookRequest) => bookRequest.user)
     bookRequests!: BookRequest[];
+
+    @OneToMany(() => BookRental, (bookRental) => bookRental.user)
+    bookRentals!: BookRental[];
 
     static readonly validSortColumn = Object.freeze(['id', 'name']);
 }

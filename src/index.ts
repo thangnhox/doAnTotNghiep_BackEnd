@@ -31,6 +31,7 @@ import { initCron } from './services/cron';
 import tags from './routes/tags';
 import notes from './routes/notes';
 import history from './routes/history';
+import bookRental from './routes/bookRental';
 
 const app = express();
 const port = 3000;
@@ -44,6 +45,7 @@ app.use('/categories', category);
 app.use('/user', user);
 app.use('/admin', admin);
 app.use('/books', books);
+app.use('/bookrental', bookRental);
 app.use('/publisher', publisher);
 app.use('/authors', authors);
 app.use('/order', orders);

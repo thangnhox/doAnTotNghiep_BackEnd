@@ -3,6 +3,7 @@ import { User } from "./User";
 import { Membership } from "./Membership";
 import { Discount } from "./Discount";
 import { decimalTransformer } from "../../util/dataTransform";
+import { Books } from "./Books";
 
 @Index("UserID", ["userId"], {})
 @Index("MembershipID", ["membershipId"], {})
@@ -15,8 +16,11 @@ export class Subscribe {
     @Column("int", { name: "UserID" })
     userId!: number;
 
-    @Column("int", { name: "MembershipID" })
-    membershipId!: number;
+    @Column("int", { name: "MembershipID", nullable: true })
+    membershipId!: number | null;
+
+    @Column("int", { name: "BooksID", nullable: true })
+    booksId!: number | null;
 
     @Column("int", { name: "DiscountID", nullable: true })
     discountId!: number | null;
@@ -43,6 +47,13 @@ export class Subscribe {
     })
     @JoinColumn([{ name: "MembershipID", referencedColumnName: "id" }])
     membership!: Membership;
+
+    @ManyToOne(() => Books, (books) => books.subscribes, {
+        onDelete: "RESTRICT",
+        onUpdate: "RESTRICT",
+    })
+    @JoinColumn([{ name: "BooksID", referencedColumnName: "id" }])
+    books!: Books;
 
     @ManyToOne(() => Discount, (discount) => discount.subscribes, {
         onDelete: "RESTRICT",

@@ -18,6 +18,8 @@ import { Category } from "./Category";
 import { User } from "./User";
 import { decimalTransformer, bufferTransformer } from "../../util/dataTransform";
 import { ReadHistory } from "./ReadHistory";
+import { Subscribe } from "./Subscribe";
+import { BookRental } from "./BookRental";
 
 @Index("Title", ["title"], {})
 @Index("PublisherID", ["publisherId"], {})
@@ -98,6 +100,12 @@ export class Books {
 
     @ManyToMany(() => User, (user) => user.books)
     users!: User[];
+
+    @OneToMany(() => Subscribe, (subscribe) => subscribe.books)
+    subscribes!: Subscribe[];
+
+    @OneToMany(() => BookRental, (bookRental) => bookRental.books)
+    bookRentals!: BookRental[];
 
     static readonly validSortColumn = Object.freeze(['id', 'title', 'price', 'publisherId', 'authorsId']);
     static readonly SELL: number = 1;
