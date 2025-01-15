@@ -182,6 +182,7 @@ CREATE TABLE test_DoAnTotNghiep.BookRequest (
     Title VARCHAR(255) NOT NULL,
     Description TEXT,
     UserID INT NOT NULL,
+    Status INT NOT NULL DEFAULT 0,
     FOREIGN KEY (UserID) REFERENCES test_DoAnTotNghiep.User(ID),
     INDEX (Title)
 );

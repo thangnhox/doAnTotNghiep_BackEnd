@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../models/repository/Datasource';
 import { sendMail, sendVerificationEmail } from '../services/email';
 import { decrypt } from '../util/crypto';
+import { hash } from '../util/crypto'
 
 class UserController {
     async login(req: Request, res: Response): Promise<void> {
@@ -23,7 +24,7 @@ class UserController {
             }
             if (userData.password === '') { // Tài khoản loại đăng nhập bằng google
                 res.status(400).json({ message: "Incorrect login info" });
-            } else if (userData.password !== password) {
+            } else if (userData.password !== hash(password)) {
                 res.status(401).json({ message: "access denied" });
             } else {
                 if (userData.status === 0) {
@@ -73,7 +74,7 @@ class UserController {
             }
 
             newUser.email = req.body.email;
-            newUser.password = req.body.password;
+            newUser.password = hash(req.body.password);
             newUser.birthYear = req.body.birthYear;
             newUser.name = req.body.name;
 
@@ -158,7 +159,7 @@ class UserController {
                 const user: User = new User();
                 user.email = email;
                 user.name = displayName;
-                user.password = uid;
+                user.password = hash(uid);
                 user.avatar = photoURL;
                 user.birthYear = null;
 
@@ -237,7 +238,7 @@ class UserController {
                 return;
             }
 
-            user.password = newPassword;
+            user.password = hash(newPassword);
 
             await userRepository.save(user);
 
@@ -278,12 +279,12 @@ class UserController {
         try {
             const changed: string[] = [];
             if (oldPassword && newPassword) {
-                if (oldPassword !== req.user.password) {
+                if (hash(oldPassword) !== req.user.password) {
                     res.status(403).json({ message: "Incorrect password" });
                     return;
                 }
 
-                req.user.password = newPassword;
+                req.user.password = hash(newPassword);
                 changed.push("password");
             }
 

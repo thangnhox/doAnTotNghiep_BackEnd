@@ -8,3 +8,8 @@ Dependencies:
 
 Install depedencies:
     [Guidance to install graphicsmagick and ghostscript](https://github.com/yakovmeister/pdf2image/blob/HEAD/docs/gm-installation.md)
+
+
+Tools:
+    Password hashing:
+        run: npx ts-node src/tools/hash.ts <password>

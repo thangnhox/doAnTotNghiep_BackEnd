@@ -14,6 +14,7 @@ import OrderaController from './OrdersController';
 import OrdersController from './OrdersController';
 import { User } from '../models/entities/User';
 import { BookRequest } from '../models/entities/BookRequest';
+import BookRetalController from './BookRetalController';
 
 class BooksController {
     async all(req: Request, res: Response): Promise<void> {
@@ -206,10 +207,13 @@ class BooksController {
                 return;
             }
 
-            const isMemberShip = await MembershipController.isValidUser(req.user);
-            const isPurcharged = await OrderaController.IsPurcharged(req.user, book);
+            const [isMemberShip, isPurcharged, isRented] = await Promise.all([
+                MembershipController.isValidUser(req.user),
+                OrderaController.IsPurcharged(req.user, book),
+                BookRetalController.isRented(req.user, book),
+            ]);
 
-            if (!isMemberShip && !isPurcharged) {
+            if (!isMemberShip && !isPurcharged && !isRented) {
                 res.status(403).json({ message: `${req.user.name} is not a membership nor purcharged the book.` });
                 return;
             }
@@ -739,7 +743,36 @@ class BooksController {
             console.error("Error while canceling book request:", error);
             res.status(500).json({ message: "Server error" });
         }
-    }    
+    }
+
+    async requestedBooksDetail(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            res.status(500).json({ message: "Authentication error" });
+            return;
+        }
+
+        try {
+            const dataSource = await AppDataSource.getInstance();
+            const bookrequestRepository = dataSource.getRepository(BookRequest);
+
+            const { id } = req.params;
+
+            const request = await bookrequestRepository.findOne({ where: { id: Number(id), userId: req.user.id } });
+
+            if (!request) {
+                res.status(404).json({ message: "Request not found" });
+                return;
+            }
+
+            res.status(200).json({
+                message: "Success",
+                data: request,
+            })
+        } catch (error) {
+            console.error("Error while getting user request books list:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
 
 }
 

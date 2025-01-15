@@ -14,6 +14,7 @@ admin.get('/membershipIncome', authenticateJWT, (req, res) => AdminController.me
 admin.get('/userStatistic', authenticateJWT, (req, res) => AdminController.getUserAgeGroupStatistics(req, res));
 
 admin.get('/requestedBooks', authenticateJWT, (req, res) => AdminController.requestedBooks(req, res));
+admin.get('/requestedBooks/:id', authenticateJWT, (req, res) => AdminController.requestedBooksDetail(req, res));
 admin.get('/searchRequest', authenticateJWT, (req, res) => AdminController.searchRequest(req, res));
 admin.get('/confirmBookrequest/:id', authenticateJWT, (req, res) => AdminController.confirmBookrequest(req, res));
 

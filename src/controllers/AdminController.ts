@@ -12,6 +12,7 @@ import { Membership } from '../models/entities/Membership';
 import { Subscribe } from '../models/entities/Subscribe';
 import { BookRequest } from '../models/entities/BookRequest';
 import { sendMail } from '../services/email';
+import { hash } from '../util/crypto';
 
 class AdminController {
     async login(req: Request, res: Response): Promise<void> {
@@ -28,7 +29,7 @@ class AdminController {
                 res.status(401).json({ message: "access denied" });
                 return;
             }
-            if (userData.password !== password || !userData.isAdmin) {
+            if (userData.password !== hash(password) || !userData.isAdmin) {
                 res.status(401).json({ message: "Access denied" });
             } else {
                 const token = makeAuthenticationToken(userData.id, userData.email);
@@ -51,7 +52,7 @@ class AdminController {
             return;
         }
 
-        if (req.body.currentPassword !== req.user!.password) {
+        if (hash(req.body.currentPassword) !== req.user!.password) {
             res.status(403).json({ message: "wrong password" });
             return;
         }
@@ -59,7 +60,7 @@ class AdminController {
         try {
             const userRepository = (await AppDataSource.getInstance()).getRepository(User);
 
-            req.user!.password = req.body.newPassword;
+            req.user!.password = hash(req.body.newPassword);
 
             const savedChanged = await userRepository.save(req.user!);
 
@@ -499,7 +500,8 @@ class AdminController {
             }
 
             if (bookId === "-1") {
-                sendMail(request.user.email, `Your book request ${request.title} has been rejected`, "Book request notification");
+                sendMail(request.user.email, `Your book request "${request.title}" has been rejected`, "Book request notification");
+                request.status = -1;
             } else {
                 const bookRepository = dataSource.getRepository(Books);
                 const book = await bookRepository.findOne({ where: { id: Number(bookId) } });
@@ -509,15 +511,43 @@ class AdminController {
                     return;
                 }
 
-                sendMail(request.user.email, `Your book request ${request.title} has been conpleted and available as ${book.title}`, "Book request notification");
+                request.status = Number(bookId);
+
+                sendMail(request.user.email, `Your book request "${request.title}" has been conpleted and available as "${book.title}"`, "Book request notification");
             }
 
-            await bookRequestRepository.remove(request);
+            await bookRequestRepository.save(request);
             res.status(200).json({ message: "Confirm success" });
 
         } catch (error: any) {
             console.error("Error while confirm book request:", error);
             res.status(500).json({ message: "Failed to fetch book request(s)", error: error.message });
+        }
+    }
+
+    async requestedBooksDetail(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        try {
+            const dataSource = await AppDataSource.getInstance();
+            const bookrequestRepository = dataSource.getRepository(BookRequest);
+
+            const { id } = req.params;
+
+            const request = await bookrequestRepository.findOne({ where: { id: Number(id) } });
+
+            if (!request) {
+                res.status(404).json({ message: "Request not found" });
+                return;
+            }
+
+            res.status(200).json({
+                message: "Success",
+                data: request,
+            })
+        } catch (error) {
+            console.error("Error while getting user request books list:", error);
+            res.status(500).json({ message: "Server error" });
         }
     }
 

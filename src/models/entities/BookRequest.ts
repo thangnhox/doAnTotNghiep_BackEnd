@@ -25,6 +25,9 @@ export class BookRequest {
     @Column("int", { name: "UserID" })
     userId!: number;
 
+    @Column("int", { name: "Status", default: () => "'0'" })
+    status!: number;
+
     @ManyToOne(() => User, (user) => user.bookRequests, {
         onDelete: "RESTRICT",
         onUpdate: "RESTRICT",
