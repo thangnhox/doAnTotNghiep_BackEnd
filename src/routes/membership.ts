@@ -14,6 +14,7 @@ membership.post('/confirm', (req, res) => MembershipController.confirm(req, res)
 membership.get('/hide/:id', authenticateJWT, (req, res) => MembershipController.hideMembership(req, res));
 membership.get('/check', authenticateJWT, (req, res) => MembershipController.checkMembership(req, res));
 membership.get('/cancel', authenticateJWT, (req, res) => MembershipController.cancelMembership(req, res));
+membership.get('/fetch/:id', (req, res) => MembershipController.fetch(req, res));
 membership.get('/', (req, res) => MembershipController.all(req, res));
 
 export default membership;

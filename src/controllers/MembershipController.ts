@@ -160,7 +160,29 @@ class MembershipController {
                 warnings
             });
         } catch (error) {
-            console.error('Error hiding discount:', error);
+            console.error('Error getting membership list:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    }
+
+    async fetch(req: Request, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            const membershipRepository = (await AppDataSource.getInstance()).getRepository(Membership);
+
+            const membership = await membershipRepository.findOne({ where: { id: Number(id) } });
+
+            if (!membership) {
+                res.status(404).json({ message: 'Membership not found' });
+                return;
+            }
+
+            res.status(200).json({
+                message: "Success",
+                data: membership,
+            });
+        } catch (error) {
+            console.error('Error getting membership info:', error);
             res.status(500).json({ message: 'Server error' });
         }
     }
