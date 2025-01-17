@@ -7,6 +7,7 @@ import { Books } from "./Books";
 
 @Index("UserID", ["userId"], {})
 @Index("MembershipID", ["membershipId"], {})
+@Index("BooksID", ["booksId"], {})
 @Index("DiscountID", ["discountId"], {})
 @Entity("Subscribe", { schema: "test_doantotnghiep" })
 export class Subscribe {

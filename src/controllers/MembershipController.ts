@@ -430,7 +430,12 @@ class MembershipController {
                 }
 
                 if ((membership.allowNew & Membership.RENEW) === 0) {
-                    // TODO: decise later
+                    logger.warn("Membership no longer allow renew, remove membership record");
+                    Promise.all([
+                        membershipRecordRepository.remove(record),
+                        sendMail(record.user.email, "Your subscription expired", "Payment notification")
+                    ]);
+                    continue;
                 }
 
                 const { value, initialOrderId } = decrypt(record.token);
@@ -576,6 +581,11 @@ class MembershipController {
 
             if (alreadyMembership) {
                 if (alreadyMembership.membershipId === membershipId) {
+                    if ((foundMembership.allowNew & Membership.RENEW) === 0) {
+                        res.status(403).json({ message: "Requested subscription is no longer allowed to extend" });
+                        return;
+                    }
+
                     newSubscription.membershipId = membershipId;
                     newSubscription.totalPrice = foundMembership.price;
                 } else {
@@ -593,6 +603,11 @@ class MembershipController {
                     newSubscription.totalPrice = priceDifference;
                 }
             } else {
+                if ((foundMembership.allowNew & Membership.NEW) === 0) {
+                    res.status(403).json({ message: "Requested subscription is no longer allow new subscribe" });
+                    return;
+                }
+
                 newSubscription.membershipId = foundMembership.id;
                 newSubscription.totalPrice = foundMembership.price;
             }

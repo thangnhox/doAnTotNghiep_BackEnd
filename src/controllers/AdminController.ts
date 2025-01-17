@@ -279,8 +279,10 @@ class AdminController {
                     "membership.Name AS MembershipName",
                     "membership.Price AS Price",
                     "COUNT(subscribe.ID) AS SubscribeCount",
-                    "SUM(subscribe.totalPrice) AS TotalIncome"
+                    "SUM(subscribe.totalPrice) AS TotalIncome",
+                    "Subscribe.TransID AS TransID",
                 ])
+                .where("TransID IS NOT NULL")
                 .groupBy("membership.ID")
                 .orderBy("TotalIncome", order as "ASC" | "DESC");
 

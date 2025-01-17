@@ -136,7 +136,7 @@ CREATE TABLE test_DoAnTotNghiep.Used (
 );
 
 CREATE TABLE test_DoAnTotNghiep.Subscribe (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
+    ID VARCHAR(64) PRIMARY KEY,
     UserID INT NOT NULL,
     MembershipID INT NULL,
     BooksID INT NULL,
