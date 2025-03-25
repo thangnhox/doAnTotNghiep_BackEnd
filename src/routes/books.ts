@@ -8,8 +8,8 @@ books.post('/add', authenticateJWT, (req, res) => BooksController.add(req, res))
 books.post('/edit/:id', authenticateJWT, (req, res) => BooksController.edit(req, res));
 books.post('/makeBookRequest', authenticateJWT, (req, res) => BooksController.makeBookRequest(req, res));
 books.post('/editBookRequest/:id', authenticateJWT, (req, res) => BooksController.editBookRequest(req, res));
-books.post('/cancelBookRequest/:id', authenticateJWT, (req, res) => BooksController.cancelBookRequest(req, res));
 
+books.get('/cancelBookRequest/:id', authenticateJWT, (req, res) => BooksController.cancelBookRequest(req, res));
 books.get('/read/:id', authenticateJWT , (req, res) => BooksController.read(req, res));
 books.get('/fetch/:id', (req, res) => BooksController.fetch(req, res));
 books.get('/download/:id', authenticateJWT, (req, res) => BooksController.downloadPDF(req, res));
