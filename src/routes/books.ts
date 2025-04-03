@@ -19,6 +19,7 @@ books.get('/liked/:id', authenticateJWT, (req, res) => BooksController.liked(req
 books.get('/liked', authenticateJWT, (req, res) => BooksController.liked(req, res));
 books.get('/requestedBooks', authenticateJWT, (req, res) => BooksController.requestedBooks(req, res));
 books.get('/requestedBooks/:id', authenticateJWT, (req, res) => BooksController.requestedBooksDetail(req, res));
+books.get('/hide/:id', authenticateJWT, (req, res) => BooksController.hideBook(req, res));
 books.get('/', (req, res) => BooksController.all(req, res));
 
 export default books;

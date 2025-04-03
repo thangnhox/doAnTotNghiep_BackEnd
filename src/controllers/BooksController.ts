@@ -23,6 +23,7 @@ class BooksController {
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
             const fields = req.query.fields ? (req.query.fields as string).split(',') : null;
+            const showHidden = req.query.showHidden === 'true';
 
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, BookDetails);
 
@@ -44,12 +45,17 @@ class BooksController {
                     .map(field => `BookDetails.${field}`);
             }
 
-            const [books, total] = await booksRepository.createQueryBuilder('BookDetails')
+            const queryBuilder = booksRepository.createQueryBuilder('BookDetails')
                 .select(selectFields)
                 .orderBy(`BookDetails.${sort}`, order.toUpperCase() as 'ASC' | 'DESC')
                 .take(pageSize)
-                .skip(offset)
-                .getManyAndCount();
+                .skip(offset);
+
+            if (!showHidden) {
+                queryBuilder.andWhere('BookDetails.status != 0');
+            }
+
+            const [books, total] = await queryBuilder.getManyAndCount();
 
             if (books.length === 0 && total > 0) {
                 res.status(416).json({ message: "out of bounds" });
@@ -256,7 +262,9 @@ class BooksController {
         if (!checkReqUser(req, res)) return;
 
         const { id } = req.params;
-        const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds, rank } = req.body;
+        // const { title, description, pageCount, price, fileUrl, coverUrl, status, authorsId, publisherId, publishDate, isRecommended, categoryIds, rank } = req.body;
+        const { title, description, pageCount, price, status, authorsId, publisherId, publishDate, isRecommended, categoryIds, rank } = req.body;
+
 
         try {
             const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
@@ -312,8 +320,8 @@ class BooksController {
             book.description = description !== undefined ? description : book.description;
             book.pageCount = pageCount !== undefined ? pageCount : book.pageCount;
             book.price = price !== undefined ? price : book.price;
-            book.fileUrl = fileUrl !== undefined ? fileUrl : book.fileUrl;
-            book.coverUrl = coverUrl !== undefined ? coverUrl : book.coverUrl;
+            // book.fileUrl = fileUrl !== undefined ? fileUrl : book.fileUrl;
+            // book.coverUrl = coverUrl !== undefined ? coverUrl : book.coverUrl;
             book.status = status !== undefined ? (status & 0xFF) : book.status;
             book.publishDate = publishDate !== undefined ? (new Date(publishDate)).toISOString().split('T')[0] : book.publishDate;
             book.isRecommended = isRecommended !== undefined ? isRecommended : book.isRecommended;
@@ -333,6 +341,7 @@ class BooksController {
 
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, BookDetails);
+            const showHidden = req.query.showHidden === 'true';
 
             const fields = req.query.fields ? (req.query.fields as string).split(',') : null;
             let selectFields = [];
@@ -449,6 +458,10 @@ class BooksController {
                     }
                 });
                 return;
+            }
+            
+            if (!showHidden) {
+                queryBuilder.andWhere('BookDetails.status != 0');
             }
 
             const [books, total] = await queryBuilder
@@ -770,6 +783,34 @@ class BooksController {
             })
         } catch (error) {
             console.error("Error while getting user request books list:", error);
+            res.status(500).json({ message: "Server error" });
+        }
+    }
+
+    async hideBook(req: Request, res: Response): Promise<void> {
+        if (!checkReqUser(req, res)) return;
+
+        try {
+            const { id } = req.params;
+
+            const bookRepository = (await AppDataSource.getInstance()).getRepository(Books);
+            const book = await bookRepository.findOne({ where: { id: Number(id) } });
+
+            if (!book) {
+                res.status(404).json({ message: "Book not found" });
+                return;
+            }
+
+            if (book.status === 0) {
+                book.status = 3;
+            } else {
+                book.status = 0;
+            }
+            await bookRepository.save(book);
+
+            res.status(200).json({ message: "Book hide state change successfully" });
+        } catch (error) {
+            console.error("Error while hiding book:", error);
             res.status(500).json({ message: "Server error" });
         }
     }

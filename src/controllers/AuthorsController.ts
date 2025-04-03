@@ -26,8 +26,7 @@ class AuthorsController {
 
             const formattedAuthors = authors.map(author => {
                 if (detail) {
-                    const bookCount = author.books.length;
-                    const booklist = author.books.map(book => {
+                    const booklist = author.books.filter(b => b.status !== 0).map(book => {
                         return {
                             BookID: book.id,
                             Title: book.title,
@@ -36,6 +35,8 @@ class AuthorsController {
                             PageCount: book.pageCount,
                         };
                     });
+                    const bookCount = booklist.length;
+                    // Limit the number of books displayed to 3, and add a "more" option if there are more than 3
                     const booksDisplay = bookCount > 3
                         ? [...booklist.slice(0, 3), { title: '...more', id: null }]
                         : booklist;
@@ -174,8 +175,7 @@ class AuthorsController {
 
             const formattedAuthors = authors.map(author => {
                 if (detail) {
-                    const bookCount = author.books.length;
-                    const booklist = author.books.map(book => {
+                    const booklist = author.books.filter(b => b.status !== 0).map(book => {
                         return {
                             BookID: book.id,
                             Title: book.title,
@@ -184,6 +184,7 @@ class AuthorsController {
                             PageCount: book.pageCount,
                         };
                     });
+                    const bookCount = booklist.length;
                     const booksDisplay = bookCount > 3
                         ? [...booklist.slice(0, 3), { title: '...more', id: null }]
                         : booklist;
@@ -257,6 +258,7 @@ class AuthorsController {
 
     async getAuthorInfo(req: Request, res: Response): Promise<void> {
         const { id } = req.params;
+        const { showHidden } = req.query;
 
         try {
             const authorRepository = (await AppDataSource.getInstance()).getRepository(Authors);
@@ -272,8 +274,13 @@ class AuthorsController {
             const { page, pageSize, offset } = getValidatedPageInfo(req.query);
             const { sort, order, warnings } = sortValidator(req.query.sort as string, req.query.order as string, Books);
 
+            const showHiddenFlag = showHidden === 'true';
+
             const [books, totalBooks] = await bookRepository.findAndCount({
-                where: { authors: { id: author.id } },
+                where: {
+                    authors: { id: author.id },
+                    ...(showHiddenFlag ? {} : { status: 1 }) // Exclude books with status = 0 if showHidden is false
+                },
                 take: pageSize,
                 skip: offset,
                 order: {
@@ -289,7 +296,7 @@ class AuthorsController {
                     coverUrl: book.coverUrl,
                     pageCount: book.pageCount,
                     description: book.description,
-                }
+                };
             });
 
             res.status(200).json({

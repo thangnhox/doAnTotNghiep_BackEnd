@@ -25,8 +25,7 @@ class CategoryController {
 
             const formattedCategories = categories.map(category => {
                 if (detail) {
-                    const bookCount = category.books.length;
-                    const booklist = category.books.map(book => {
+                    const booklist = category.books.filter(b => b.status !== 0).map(book => {
                         return {
                             BookID: book.id,
                             Title: book.title,
@@ -35,6 +34,7 @@ class CategoryController {
                             PageCount: book.pageCount,
                         };
                     });
+                    const bookCount = booklist.length;
                     const booksDisplay = bookCount > 3
                         ? [...booklist.slice(0, 3), { title: '...more', id: null }]
                         : booklist;
@@ -85,8 +85,7 @@ class CategoryController {
                 }
 
                 if (detail) {
-                    const bookCount = category.books.length;
-                    const booklist = category.books.map(book => {
+                    const booklist = category.books.filter(b => b.status !== 0).map(book => {
                         return {
                             BookID: book.id,
                             Title: book.title,
@@ -95,6 +94,7 @@ class CategoryController {
                             PageCount: book.pageCount,
                         };
                     });
+                    const bookCount = booklist.length;
                     const booksDisplay = bookCount > 3
                         ? [...booklist.slice(0, 3), { title: '...more', id: null }]
                         : booklist;
@@ -135,7 +135,7 @@ class CategoryController {
                 const formattedCategories = categories.map(category => {
                     if (detail) {
                         const bookCount = category.books.length;
-                        const booklist = category.books.map(book => {
+                        const booklist = category.books.filter(b => b.status !== 0).map(book => {
                             return {
                                 BookID: book.id,
                                 Title: book.title,
@@ -174,6 +174,7 @@ class CategoryController {
             const categoryRepository = (await AppDataSource.getInstance()).getRepository(Category);
             const { id } = req.params;
             const detail = req.query.detail === 'true';
+            const showHidden = req.query.showHidden === 'true';
 
             const category = await categoryRepository.findOne({
                 where: { id: Number(id) },
@@ -186,7 +187,9 @@ class CategoryController {
             }
 
             if (detail) {
-                const bookCount = category.books.length;
+                const filteredBooks = category.books.filter(b => showHidden || b.status !== 0);
+
+                const bookCount = filteredBooks.length;
 
                 // Pagination
                 const { page, pageSize, offset } = getValidatedPageInfo(req.query);
@@ -197,7 +200,7 @@ class CategoryController {
                     return;
                 }
 
-                const paginatedBooks = category.books.slice(offset, offset + pageSize);
+                const paginatedBooks = filteredBooks.slice(offset, offset + pageSize);
 
                 const booklist = paginatedBooks.map(book => {
                     return {
