@@ -608,6 +608,17 @@ class MembershipController {
                     return;
                 }
 
+                if (foundMembership.price === 0) {
+                    const newMembership = new MembershipRecord();
+
+                    newMembership.userId = req.user.id;
+                    newMembership.membershipId = foundMembership.id;
+                    newMembership.expireDate = getDateFromToday(30);
+                    res.status(200).json({ message: "Membership is free" });
+                    await membershipRecordRepository.save(newMembership);
+                    return;
+                }
+
                 newSubscription.membershipId = foundMembership.id;
                 newSubscription.totalPrice = foundMembership.price;
             }
