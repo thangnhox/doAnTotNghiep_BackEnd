@@ -11,7 +11,7 @@ export function initCron(): void {
     cron.schedule('0 0 * * *', async () => {
         logger.info("Start daily jobs");
         await Promise.all([
-            // MembershipController.autoRenewMembership(),
+            MembershipController.dailyCheck(),
             DiscountController.dailyExpireCheck(),
             BookRetalController.dailyCheck(),
         ])

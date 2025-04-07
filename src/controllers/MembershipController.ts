@@ -498,6 +498,32 @@ class MembershipController {
         }
     }
 
+    async dailyCheck(): Promise<void> {
+        const logger = Logger.getInstance();
+
+        logger.info("Start daily auto renew membership:", (new Date()).toISOString().split('T')[0]);
+
+        const membershipRecordRepository = (await AppDataSource.getInstance()).getRepository(MembershipRecord);
+
+        const toDay = (new Date()).toISOString().split('T')[0];
+
+        const checkRecords = await membershipRecordRepository.find({ where: { expireDate: toDay }, relations: ['user'] });
+
+        for (const record of checkRecords) {
+            try {
+                logger.warn(`[${record.user.id}]: [${record.user.name}] membership [${record.membershipId}] expired`);
+                Promise.all([
+                    membershipRecordRepository.remove(record),
+                    sendMail(record.user.email, "Your subscription expired", "Payment notification")
+                ])
+                continue;
+            } catch (error: any) {
+                logger.error("Error while auto remove membership", error.message);
+                continue;
+            }
+        }
+    }
+
     async cancelMembership(req: Request, res: Response): Promise<void> {
         if (!req.user) {
             res.status(500).json({ message: "Failed to get authentication info" });
